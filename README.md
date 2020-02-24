@@ -1,0 +1,1 @@
+# embulk-output-sf_bulk_api
