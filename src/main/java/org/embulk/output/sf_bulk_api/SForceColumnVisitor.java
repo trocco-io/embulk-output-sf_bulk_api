@@ -3,6 +3,8 @@ package org.embulk.output.sf_bulk_api;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sforce.soap.partner.sobject.SObject;
 
@@ -10,6 +12,7 @@ public class SForceColumnVisitor implements ColumnVisitor
 {
     private final SObject record;
     private final PageReader pageReader;
+    private final Logger logger =  LoggerFactory.getLogger(SForceColumnVisitor.class);
 
     public SForceColumnVisitor(SObject record, PageReader pageReader)
     {

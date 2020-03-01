@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.sforce.async.AsyncApiException;
 import com.sforce.soap.partner.PartnerConnection;
+import com.sforce.soap.partner.Connector;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.soap.partner.SaveResult;
 import com.sforce.soap.partner.UpsertResult;
@@ -22,19 +23,20 @@ public class ForceClient
 {
     private final PartnerConnection partnerConnection;
     private final Logger logger =  LoggerFactory.getLogger(ForceClient.class);
-    private ActionType actionType;
-    private String upsertKey;
+    private final ActionType actionType;
+    private final String upsertKey;
 
     public ForceClient(final PluginTask pluginTask) throws ConnectionException, AsyncApiException
     {
         final ConnectorConfig connectorConfig = createConnectorConfig(pluginTask);
-        this.partnerConnection = new PartnerConnection(connectorConfig);
+        this.partnerConnection = Connector.newConnection(connectorConfig);
         this.actionType = ActionType.convertActionType(pluginTask.getActionType());
         this.upsertKey = pluginTask.getUpsertKey();
     }
 
     public void action(final List<SObject> sObjects) throws ConnectionException
     {
+        logger.info("sObjects size:" + Integer.toString(sObjects.size()));
         switch (this.actionType) {
         case INSERT:
             insert(sObjects);
@@ -42,6 +44,8 @@ public class ForceClient
             upsert(this.upsertKey, sObjects);
         case UPDATE:
             update(sObjects);
+        default:
+            throw new RuntimeException();
         }
     }
 
@@ -52,46 +56,52 @@ public class ForceClient
 
     private ConnectorConfig createConnectorConfig(final PluginTask pluginTask) throws ConnectionException
     {
-        final ConnectorConfig partnerConfig = new ConnectorConfig();
-        partnerConfig.setUsername(pluginTask.getUsername());
-        partnerConfig.setPassword(pluginTask.getPassword() + pluginTask.getSecurityToken());
-        partnerConfig.setAuthEndpoint(pluginTask.getAuthEndPoint() + pluginTask.getApiVersion());
-        new PartnerConnection(partnerConfig);
-
         final ConnectorConfig config = new ConnectorConfig();
-        config.setSessionId(partnerConfig.getSessionId());
-        final String soapEndpoint = partnerConfig.getServiceEndpoint();
-        final String restEndpoint = soapEndpoint.substring(0, soapEndpoint.indexOf("Soap/")) + "async/" + pluginTask.getApiVersion();
-        config.setRestEndpoint(restEndpoint);
-        config.setCompression(true);
-        config.setTraceMessage(false);
+        config.setUsername(pluginTask.getUsername());
+        config.setPassword(pluginTask.getPassword() + pluginTask.getSecurityToken());
+        config.setAuthEndpoint(pluginTask.getAuthEndPoint() + pluginTask.getApiVersion() + "/");
         return config;
     }
 
     private void insert(final List<SObject> sObjects) throws ConnectionException
     {
-        final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
-        loggingSaveErrorMessage(saveResultArray);
+        try {
+            final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
+            loggingSaveErrorMessage(saveResultArray);
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
-    private void upsert(String key, final List<SObject> sObjects) throws ConnectionException
+    private void upsert(final String key, final List<SObject> sObjects) throws ConnectionException
     {
-        final UpsertResult[] upsertResultArray = partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
-        final List<UpsertResult> upsertResults = Arrays.asList(upsertResultArray);
-        upsertResults.forEach(result -> {
-            if (!result.isSuccess()) {
-                List<String> errors = Arrays.asList(result.getErrors())
-                                            .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
-                                            .collect(Collectors.toList());
-                logger.info(String.join(",", errors));
-            }
-        });
+        try {
+            final UpsertResult[] upsertResultArray = partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
+            final List<UpsertResult> upsertResults = Arrays.asList(upsertResultArray);
+            upsertResults.forEach(result -> {
+                if (!result.isSuccess()) {
+                    final List<String> errors = Arrays.asList(result.getErrors())
+                                                .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
+                                                .collect(Collectors.toList());
+                    logger.info(String.join(",", errors));
+                }
+            });
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     private void update(final List<SObject> sObjects) throws ConnectionException
     {
-        final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
-        loggingSaveErrorMessage(saveResultArray);
+        try {
+            final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
+            loggingSaveErrorMessage(saveResultArray);
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     private void loggingSaveErrorMessage(final SaveResult[] saveResultArray)
@@ -99,11 +109,12 @@ public class ForceClient
         final List<SaveResult> saveResults = Arrays.asList(saveResultArray);
         saveResults.forEach(result -> {
             if (!result.isSuccess()) {
-                List<String> errors = Arrays.asList(result.getErrors())
+                final List<String> errors = Arrays.asList(result.getErrors())
                                             .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
                                             .collect(Collectors.toList());
                 logger.info(String.join(",", errors));
             }
+            logger.info(result.getId());
         });
     }
 
@@ -111,7 +122,7 @@ public class ForceClient
     {
         INSERT, UPSERT, UPDATE;
 
-        public static ActionType convertActionType(String key)
+        public static ActionType convertActionType(final String key)
         {
             switch (key) {
             case "insert":
