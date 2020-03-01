@@ -1,5 +1,6 @@
 package org.embulk.output.sf_bulk_api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.sforce.soap.partner.sobject.SObject;
@@ -11,6 +12,8 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.Page;
 import org.embulk.spi.PageReader;
 import org.embulk.spi.TransactionalPageOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SForceTransactionalPageOutput implements TransactionalPageOutput
 {
@@ -21,11 +24,14 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
     private final PluginTask pluginTask;
     private List<SObject> records;
 
+    private final Logger logger =  LoggerFactory.getLogger(SForceTransactionalPageOutput.class);
+
     public SForceTransactionalPageOutput(ForceClient forceClient, PageReader pageReader, PluginTask pluginTask)
     {
         this.forceClient = forceClient;
         this.pageReader = pageReader;
         this.pluginTask = pluginTask;
+        this.records = new ArrayList<>();
     }
 
     @Override
@@ -37,6 +43,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
                 final SObject record = new SObject();
                 record.setType(this.pluginTask.getObject());
                 pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
+                logger.info(record.toString());
                 this.records.add(record);
                 if (this.records.size() >= BATCH_SIZE) {
                     forceClient.action(records);
