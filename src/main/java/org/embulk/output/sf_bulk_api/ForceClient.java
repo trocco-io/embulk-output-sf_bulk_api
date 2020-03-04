@@ -13,6 +13,7 @@ import com.sforce.soap.partner.UpsertResult;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
 
+import org.embulk.exec.ExecutionInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +70,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new ExecutionInterruptedException(e);
         }
     }
 
@@ -88,6 +90,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new ExecutionInterruptedException(e);
         }
     }
 
@@ -99,6 +102,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new ExecutionInterruptedException(e);
         }
     }
 
@@ -112,7 +116,6 @@ public class ForceClient
                                             .collect(Collectors.toList());
                 logger.info(String.join(",", errors));
             }
-            logger.info(result.getId());
         });
     }
 
