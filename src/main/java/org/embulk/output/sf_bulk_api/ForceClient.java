@@ -40,18 +40,16 @@ public class ForceClient
         switch (this.actionType) {
         case INSERT:
             insert(sObjects);
+            break;
         case UPSERT:
             upsert(this.upsertKey, sObjects);
+            break;
         case UPDATE:
             update(sObjects);
+            break;
         default:
             throw new RuntimeException();
         }
-    }
-
-    public void logout() throws ConnectionException
-    {
-        this.partnerConnection.logout();
     }
 
     private ConnectorConfig createConnectorConfig(final PluginTask pluginTask) throws ConnectionException

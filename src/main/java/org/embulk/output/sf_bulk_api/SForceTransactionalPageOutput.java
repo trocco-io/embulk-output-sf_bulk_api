@@ -7,7 +7,9 @@ import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.embulk.config.ConfigException;
 import org.embulk.config.TaskReport;
+import org.embulk.exec.ExecutionInterruptedException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.Page;
 import org.embulk.spi.PageReader;
@@ -17,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class SForceTransactionalPageOutput implements TransactionalPageOutput
 {
-    private static final Long BATCH_SIZE = 5000L;
+    private static final Long BATCH_SIZE = 1000L;
 
     private final ForceClient forceClient;
     private final PageReader pageReader;
@@ -43,7 +45,6 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
                 final SObject record = new SObject();
                 record.setType(this.pluginTask.getObject());
                 pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
-                logger.info(record.toString());
                 this.records.add(record);
                 if (this.records.size() >= BATCH_SIZE) {
                     forceClient.action(records);
@@ -55,7 +56,12 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
             }
         }
         catch (ConnectionException e) {
-            //TODO エラーハンドリング
+            logger.error(e.getMessage(), e);
+            throw new ConfigException(e);
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            throw new ExecutionInterruptedException(e);
         }
     }
 
@@ -67,12 +73,6 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
     @Override
     public void close()
     {
-        try {
-            forceClient.logout();
-        }
-        catch (ConnectionException e) {
-            // TODO エラーハンドリング
-        }
     }
 
     @Override
