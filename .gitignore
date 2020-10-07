@@ -12,3 +12,4 @@ build/
 .project
 .vscode
 bin
+/out/
