@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.sforce.async.AsyncApiException;
 import com.sforce.soap.partner.PartnerConnection;
 import com.sforce.soap.partner.Connector;
 import com.sforce.soap.partner.sobject.SObject;
@@ -26,7 +25,7 @@ public class ForceClient
     private final ActionType actionType;
     private final String upsertKey;
 
-    public ForceClient(final PluginTask pluginTask) throws ConnectionException, AsyncApiException
+    public ForceClient(final PluginTask pluginTask) throws ConnectionException
     {
         final ConnectorConfig connectorConfig = createConnectorConfig(pluginTask);
         this.partnerConnection = Connector.newConnection(connectorConfig);
@@ -36,16 +35,18 @@ public class ForceClient
 
     public void action(final List<SObject> sObjects) throws ConnectionException
     {
-        logger.info("sObjects size:" + Integer.toString(sObjects.size()));
+        logger.info("sObjects size:" + sObjects.size());
         switch (this.actionType) {
         case INSERT:
             insert(sObjects);
+            return;
         case UPSERT:
             upsert(this.upsertKey, sObjects);
+            return;
         case UPDATE:
             update(sObjects);
+            return;
         default:
-            throw new RuntimeException();
         }
     }
 
@@ -54,7 +55,7 @@ public class ForceClient
         this.partnerConnection.logout();
     }
 
-    private ConnectorConfig createConnectorConfig(final PluginTask pluginTask) throws ConnectionException
+    private ConnectorConfig createConnectorConfig(final PluginTask pluginTask)
     {
         final ConnectorConfig config = new ConnectorConfig();
         config.setUsername(pluginTask.getUsername());
@@ -63,7 +64,7 @@ public class ForceClient
         return config;
     }
 
-    private void insert(final List<SObject> sObjects) throws ConnectionException
+    private void insert(final List<SObject> sObjects)
     {
         try {
             final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
@@ -74,7 +75,7 @@ public class ForceClient
         }
     }
 
-    private void upsert(final String key, final List<SObject> sObjects) throws ConnectionException
+    private void upsert(final String key, final List<SObject> sObjects)
     {
         try {
             final UpsertResult[] upsertResultArray = partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
@@ -84,7 +85,7 @@ public class ForceClient
                     final List<String> errors = Arrays.asList(result.getErrors())
                                                 .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
                                                 .collect(Collectors.toList());
-                    logger.info(String.join(",", errors));
+                    logger.warn(String.join(",", errors));
                 }
             });
         }
@@ -93,7 +94,7 @@ public class ForceClient
         }
     }
 
-    private void update(final List<SObject> sObjects) throws ConnectionException
+    private void update(final List<SObject> sObjects)
     {
         try {
             final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
@@ -112,9 +113,8 @@ public class ForceClient
                 final List<String> errors = Arrays.asList(result.getErrors())
                                             .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
                                             .collect(Collectors.toList());
-                logger.info(String.join(",", errors));
+                logger.warn(String.join(",", errors));
             }
-            logger.info(result.getId());
         });
     }
 

@@ -2,7 +2,6 @@ package org.embulk.output.sf_bulk_api;
 
 import java.util.List;
 
-import com.sforce.async.AsyncApiException;
 import com.sforce.ws.ConnectionException;
 
 import org.embulk.config.ConfigDiff;
@@ -51,7 +50,7 @@ public class SfBulkApiOutputPlugin implements OutputPlugin
             PageReader pageReader = new PageReader(schema);
             return new SForceTransactionalPageOutput(client, pageReader, task);
         }
-        catch (ConnectionException | AsyncApiException e) {
+        catch (ConnectionException e) {
             logger.error(e.getMessage(), e);
             throw new ConfigException(e);
         }
