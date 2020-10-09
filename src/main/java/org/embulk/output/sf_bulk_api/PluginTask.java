@@ -30,5 +30,6 @@ interface PluginTask extends Task
     String getActionType();
 
     @Config("upsert_key")
+    @ConfigDefault("\"key\"")
     String getUpsertKey();
 }
