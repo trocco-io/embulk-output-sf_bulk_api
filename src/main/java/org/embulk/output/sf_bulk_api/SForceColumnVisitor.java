@@ -6,13 +6,9 @@ import org.embulk.spi.PageReader;
 
 import com.sforce.soap.partner.sobject.SObject;
 import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampFormatter;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import java.text.SimpleDateFormat;
-import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.Locale;
 
 public class SForceColumnVisitor implements ColumnVisitor {
