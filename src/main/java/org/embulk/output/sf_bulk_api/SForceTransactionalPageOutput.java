@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class SForceTransactionalPageOutput implements TransactionalPageOutput
 {
-    private static final Long BATCH_SIZE = 5000L;
+    private static final Long BATCH_SIZE = 200L;
 
     private final ForceClient forceClient;
     private final PageReader pageReader;
@@ -43,10 +43,10 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
                 final SObject record = new SObject();
                 record.setType(this.pluginTask.getObject());
                 pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
-                logger.info(record.toString());
                 this.records.add(record);
                 if (this.records.size() >= BATCH_SIZE) {
                     forceClient.action(records);
+                    this.records = new ArrayList<>();
                 }
             }
 
@@ -55,7 +55,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
             }
         }
         catch (ConnectionException e) {
-            //TODO エラーハンドリング
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -71,7 +71,6 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
             forceClient.logout();
         }
         catch (ConnectionException e) {
-            // TODO エラーハンドリング
         }
     }
 
