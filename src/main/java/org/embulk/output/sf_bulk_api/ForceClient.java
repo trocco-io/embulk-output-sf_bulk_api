@@ -72,6 +72,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new RuntimeException("Salesforce throw exception", e);
         }
     }
 
@@ -91,6 +92,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new RuntimeException("Salesforce throw exception", e);
         }
     }
 
@@ -102,6 +104,7 @@ public class ForceClient
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw new RuntimeException("Salesforce throw exception", e);
         }
     }
 
