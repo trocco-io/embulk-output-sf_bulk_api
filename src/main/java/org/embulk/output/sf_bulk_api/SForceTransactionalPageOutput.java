@@ -3,6 +3,7 @@ package org.embulk.output.sf_bulk_api;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 
@@ -54,7 +55,10 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
                 forceClient.action(records);
             }
         }
-        catch (ConnectionException e) {
+        catch (ApiFault e) {
+            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+        }
+        catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
