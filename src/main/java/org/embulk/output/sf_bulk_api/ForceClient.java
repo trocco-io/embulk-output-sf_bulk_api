@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.sforce.soap.partner.PartnerConnection;
 import com.sforce.soap.partner.Connector;
+import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.soap.partner.SaveResult;
 import com.sforce.soap.partner.UpsertResult;
@@ -70,7 +71,9 @@ public class ForceClient
             final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
             loggingSaveErrorMessage(saveResultArray);
         }
-        catch (Exception e) {
+        catch (ApiFault e) {
+            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -89,7 +92,9 @@ public class ForceClient
                 }
             });
         }
-        catch (Exception e) {
+        catch (ApiFault e) {
+            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -100,7 +105,9 @@ public class ForceClient
             final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
             loggingSaveErrorMessage(saveResultArray);
         }
-        catch (Exception e) {
+        catch (ApiFault e) {
+            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
