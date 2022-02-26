@@ -64,45 +64,27 @@ public class ForceClient
         return config;
     }
 
-    private void insert(final List<SObject> sObjects)
-    {
-        try {
-            final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
-            loggingSaveErrorMessage(saveResultArray);
-        }
-        catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+    private void insert(final List<SObject> sObjects) throws ConnectionException {
+        final SaveResult[] saveResultArray = partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
+        loggingSaveErrorMessage(saveResultArray);
     }
 
-    private void upsert(final String key, final List<SObject> sObjects)
-    {
-        try {
-            final UpsertResult[] upsertResultArray = partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
-            final List<UpsertResult> upsertResults = Arrays.asList(upsertResultArray);
-            upsertResults.forEach(result -> {
-                if (!result.isSuccess()) {
-                    final List<String> errors = Arrays.asList(result.getErrors())
-                                                .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
-                                                .collect(Collectors.toList());
-                    logger.warn(String.join(",", errors));
-                }
-            });
-        }
-        catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+    private void upsert(final String key, final List<SObject> sObjects) throws ConnectionException {
+        final UpsertResult[] upsertResultArray = partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
+        final List<UpsertResult> upsertResults = Arrays.asList(upsertResultArray);
+        upsertResults.forEach(result -> {
+            if (!result.isSuccess()) {
+                final List<String> errors = Arrays.asList(result.getErrors())
+                                            .stream().map(e -> e.getStatusCode() + ":" + e.getMessage())
+                                            .collect(Collectors.toList());
+                logger.warn(String.join(",", errors));
+            }
+        });
     }
 
-    private void update(final List<SObject> sObjects)
-    {
-        try {
-            final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
-            loggingSaveErrorMessage(saveResultArray);
-        }
-        catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+    private void update(final List<SObject> sObjects) throws ConnectionException {
+        final SaveResult[] saveResultArray = partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
+        loggingSaveErrorMessage(saveResultArray);
     }
 
     private void loggingSaveErrorMessage(final SaveResult[] saveResultArray)
