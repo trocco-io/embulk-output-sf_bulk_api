@@ -45,12 +45,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
                 pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
                 records.add(record);
                 if (records.size() >= BATCH_SIZE) {
-                    try {
-                        forceClient.action(records);
-                    } catch (ApiFault e) {
-                        // even if some records failed to register, processing continues.
-                        logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
-                    }
+                    forceClient.action(records);
                     records = new ArrayList<>();
                 }
             }
@@ -58,6 +53,9 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
             if (CollectionUtils.isNotEmpty(records)) {
                 forceClient.action(records);
             }
+        }
+        catch (ApiFault e) {
+            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
