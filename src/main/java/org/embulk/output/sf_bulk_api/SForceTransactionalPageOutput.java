@@ -23,7 +23,6 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
     private final ForceClient forceClient;
     private final PageReader pageReader;
     private final PluginTask pluginTask;
-    private List<SObject> records;
 
     private final Logger logger =  LoggerFactory.getLogger(SForceTransactionalPageOutput.class);
 
@@ -32,31 +31,37 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput
         this.forceClient = forceClient;
         this.pageReader = pageReader;
         this.pluginTask = pluginTask;
-        this.records = new ArrayList<>();
     }
 
     @Override
     public void add(Page page)
     {
         try {
+            ArrayList records = new ArrayList<>();
             pageReader.setPage(page);
             while (pageReader.nextRecord()) {
                 final SObject record = new SObject();
                 record.setType(this.pluginTask.getObject());
                 pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
-                this.records.add(record);
-                if (this.records.size() >= BATCH_SIZE) {
-                    forceClient.action(records);
-                    this.records = new ArrayList<>();
+                records.add(record);
+                if (records.size() >= BATCH_SIZE) {
+                    try {
+                       forceClient.action(records);
+                    } catch (ApiFault e) {
+                        // even if some records failed to register, processing continues.
+                        logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+                    }
+                    records = new ArrayList<>();
                 }
             }
 
             if (CollectionUtils.isNotEmpty(records)) {
-                forceClient.action(records);
+                try {
+                    forceClient.action(records);
+                } catch (ApiFault e) {
+                    logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
+                }
             }
-        }
-        catch (ApiFault e) {
-            logger.error(e.getExceptionCode().toString() + ":" + e.getExceptionMessage(), e);
         }
         catch (Exception e) {
             logger.error(e.getMessage(), e);
