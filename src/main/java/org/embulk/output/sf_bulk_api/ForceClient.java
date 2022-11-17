@@ -1,7 +1,9 @@
 package org.embulk.output.sf_bulk_api;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.sforce.soap.partner.PartnerConnection;
@@ -25,9 +27,13 @@ public class ForceClient
     private final ActionType actionType;
     private final String upsertKey;
 
+    private final Map<AuthMethod, ConnectorConfigCreater> connectorConfigCreaters = new HashMap<>();
+
     public ForceClient(final PluginTask pluginTask) throws ConnectionException
     {
-        final ConnectorConfig connectorConfig = createConnectorConfig(pluginTask);
+        setConnectorConfigCreaters(pluginTask);
+        ConnectorConfigCreater connectorConfigCreater = connectorConfigCreaters.get(pluginTask.getAuthMethod());
+        ConnectorConfig connectorConfig = connectorConfigCreater.createConnectorConfig();
         this.partnerConnection = Connector.newConnection(connectorConfig);
         this.actionType = ActionType.convertActionType(pluginTask.getActionType());
         this.upsertKey = pluginTask.getUpsertKey();
@@ -55,13 +61,10 @@ public class ForceClient
         this.partnerConnection.logout();
     }
 
-    private ConnectorConfig createConnectorConfig(final PluginTask pluginTask)
+    private void setConnectorConfigCreaters(PluginTask pluginTask)
     {
-        final ConnectorConfig config = new ConnectorConfig();
-        config.setUsername(pluginTask.getUsername());
-        config.setPassword(pluginTask.getPassword() + pluginTask.getSecurityToken());
-        config.setAuthEndpoint(pluginTask.getAuthEndPoint() + pluginTask.getApiVersion() + "/");
-        return config;
+        connectorConfigCreaters.put(AuthMethod.oauth, new OauthConnectorConfigCreater(pluginTask));
+        connectorConfigCreaters.put(AuthMethod.user_password, new UserPasswordConnectorConfigCreater(pluginTask));
     }
 
     private void insert(final List<SObject> sObjects) throws ConnectionException {
