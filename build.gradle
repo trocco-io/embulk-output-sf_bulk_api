@@ -24,10 +24,6 @@ version = {
     } else {
         "0.0.0.${vd.gitHash}"
     }
-        vd.lastTag
-    } else {
-        "0.0.0.${vd.gitHash}"
-    }
 }()
 
 
