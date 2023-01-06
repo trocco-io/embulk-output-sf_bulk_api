@@ -62,13 +62,13 @@ task gem(type: JRubyExec, dependsOn: ["gemspec", "classpath"]) {
     jrubyArgs "-S"
     script "gem"
     scriptArgs "build", "${project.name}.gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
+    doLast { ant.move(file: "${project.name}-${version}.gem", todir: "pkg") }
 }
 
 task gemPush(type: JRubyExec, dependsOn: ["gem"]) {
     jrubyArgs "-S"
     script "gem"
-    scriptArgs "push", "pkg/${project.name}-${project.version}.gem"
+    scriptArgs "push", "pkg/${project.name}-${version}.gem"
 }
 
 task "package"(dependsOn: ["gemspec", "classpath"]) {
@@ -85,7 +85,7 @@ task gemspec {
     doLast { gemspecFile.write($/
 Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
+  spec.version       = "${version}"
   spec.authors       = ["dododo8m"]
   spec.summary       = %[Sf Bulk Api file output plugin for Embulk]
   spec.description   = %[Stores files on Sf Bulk Api.]
