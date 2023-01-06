@@ -2,7 +2,8 @@ plugins {
     id "com.jfrog.bintray" version "1.1"
     id "com.github.jruby-gradle.base" version "1.5.0"
     id "java"
-    id "checkstyle"
+    id "com.diffplug.spotless" version "5.15.0"
+    id "com.palantir.git-version" version "0.13.0"
 }
 import com.github.jrubygradle.JRubyExec
 repositories {
@@ -13,10 +14,18 @@ configurations {
     provided
 }
 
-version = "0.1.9"
-
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+version = {
+    def vd = versionDetails()
+    if (vd.commitDistance == 0 && vd.lastTag ==~ /^[0-9]+\.[0-9]+\.[0-9]+(\.[a-zA-Z0-9]+)?/) {
+        vd.lastTag
+    } else {
+        "0.0.0.${vd.gitHash}"
+    }
+}()
+
 
 dependencies {
     compile  "org.embulk:embulk-core:0.9.17"
@@ -37,17 +46,12 @@ task classpath(type: Copy, dependsOn: ["jar"]) {
 }
 clean { delete "classpath" }
 
-checkstyle {
-    configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
-    toolVersion = '6.14.1'
-}
-checkstyleMain {
-    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
-    ignoreFailures = false
-}
-checkstyleTest {
-    configFile = file("${project.rootDir}/config/checkstyle/default.xml")
-    ignoreFailures = false
+spotless {
+    java {
+        importOrder()
+        removeUnusedImports()
+        googleJavaFormat()
+    }
 }
 task checkstyle(type: Checkstyle) {
     classpath = sourceSets.main.output + sourceSets.test.output

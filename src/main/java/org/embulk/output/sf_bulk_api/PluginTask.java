@@ -4,32 +4,31 @@ import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 
-interface PluginTask extends Task
-{
-    @Config("username")
-    String getUsername();
+interface PluginTask extends Task {
+  @Config("username")
+  String getUsername();
 
-    @Config("password")
-    String getPassword();
+  @Config("password")
+  String getPassword();
 
-    @Config("api_version")
-    @ConfigDefault("\"46.0\"")
-    String getApiVersion();
+  @Config("api_version")
+  @ConfigDefault("\"46.0\"")
+  String getApiVersion();
 
-    @Config("security_token")
-    String getSecurityToken();
+  @Config("security_token")
+  String getSecurityToken();
 
-    @Config("auth_end_point")
-    @ConfigDefault("\"https://login.salesforce.com/services/Soap/u/\"")
-    String getAuthEndPoint();
+  @Config("auth_end_point")
+  @ConfigDefault("\"https://login.salesforce.com/services/Soap/u/\"")
+  String getAuthEndPoint();
 
-    @Config("object")
-    String getObject();
+  @Config("object")
+  String getObject();
 
-    @Config("action_type")
-    String getActionType();
+  @Config("action_type")
+  String getActionType();
 
-    @Config("upsert_key")
-    @ConfigDefault("\"key\"")
-    String getUpsertKey();
+  @Config("upsert_key")
+  @ConfigDefault("\"key\"")
+  String getUpsertKey();
 }
