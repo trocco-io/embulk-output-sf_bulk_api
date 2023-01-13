@@ -8,6 +8,7 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.embulk.exec.ExecutionInterruptedException;
+import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.PageReader;
@@ -22,7 +23,12 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
   public ConfigDiff transaction(
       ConfigSource config, org.embulk.spi.Schema schema, int taskCount, Control control) {
     final PluginTask task = config.loadConfig(PluginTask.class);
-    control.run(task.dump());
+    final List<TaskReport> taskReports = control.run(task.dump());
+    final long failures =
+        taskReports.stream().mapToLong(taskReport -> taskReport.get(long.class, "failures")).sum();
+    if (taskReports.stream().anyMatch(taskReport -> taskReport.get(boolean.class, "failed"))) {
+      throw new DataException(String.format("There are %,d failures", failures));
+    }
     return Exec.newConfigDiff();
   }
 
@@ -44,9 +50,10 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       TaskSource taskSource, org.embulk.spi.Schema schema, int taskIndex) {
     try {
       final PluginTask task = taskSource.loadTask(PluginTask.class);
-      final ForceClient client = new ForceClient(task);
+      final ErrorHandler handler = new ErrorHandler(schema);
+      final ForceClient client = new ForceClient(task, handler);
       PageReader pageReader = new PageReader(schema);
-      return new SForceTransactionalPageOutput(client, pageReader, task);
+      return new SForceTransactionalPageOutput(client, pageReader, task, handler);
     } catch (ConnectionException e) {
       logger.error(e.getMessage(), e);
       throw new ConfigException(e);

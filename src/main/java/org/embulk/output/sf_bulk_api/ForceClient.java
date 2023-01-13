@@ -7,9 +7,7 @@ import com.sforce.soap.partner.UpsertResult;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,27 +17,28 @@ public class ForceClient {
   private final Logger logger = LoggerFactory.getLogger(ForceClient.class);
   private final ActionType actionType;
   private final String upsertKey;
+  private final ErrorHandler errorHandler;
 
-  public ForceClient(final PluginTask pluginTask) throws ConnectionException {
+  public ForceClient(final PluginTask pluginTask, final ErrorHandler errorHandler)
+      throws ConnectionException {
     final ConnectorConfig connectorConfig = createConnectorConfig(pluginTask);
     this.partnerConnection = Connector.newConnection(connectorConfig);
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
     this.upsertKey = pluginTask.getUpsertKey();
+    this.errorHandler = errorHandler;
   }
 
-  public void action(final List<SObject> sObjects) throws ConnectionException {
+  public long action(final List<SObject> sObjects) throws ConnectionException {
     logger.info("sObjects size:" + sObjects.size());
     switch (this.actionType) {
       case INSERT:
-        insert(sObjects);
-        return;
+        return insert(sObjects);
       case UPSERT:
-        upsert(this.upsertKey, sObjects);
-        return;
+        return upsert(this.upsertKey, sObjects);
       case UPDATE:
-        update(sObjects);
-        return;
+        return update(sObjects);
       default:
+        throw new AssertionError("Invalid actionType: " + actionType);
     }
   }
 
@@ -55,46 +54,22 @@ public class ForceClient {
     return config;
   }
 
-  private void insert(final List<SObject> sObjects) throws ConnectionException {
+  private long insert(final List<SObject> sObjects) throws ConnectionException {
     final SaveResult[] saveResultArray =
         partnerConnection.create(sObjects.toArray(new SObject[sObjects.size()]));
-    loggingSaveErrorMessage(saveResultArray);
+    return errorHandler.handleErrors(sObjects, saveResultArray);
   }
 
-  private void upsert(final String key, final List<SObject> sObjects) throws ConnectionException {
+  private long upsert(final String key, final List<SObject> sObjects) throws ConnectionException {
     final UpsertResult[] upsertResultArray =
         partnerConnection.upsert(key, sObjects.toArray(new SObject[sObjects.size()]));
-    final List<UpsertResult> upsertResults = Arrays.asList(upsertResultArray);
-    upsertResults.forEach(
-        result -> {
-          if (!result.isSuccess()) {
-            final List<String> errors =
-                Arrays.asList(result.getErrors()).stream()
-                    .map(e -> e.getStatusCode() + ":" + e.getMessage())
-                    .collect(Collectors.toList());
-            logger.warn(String.join(",", errors));
-          }
-        });
+    return errorHandler.handleErrors(sObjects, upsertResultArray);
   }
 
-  private void update(final List<SObject> sObjects) throws ConnectionException {
+  private long update(final List<SObject> sObjects) throws ConnectionException {
     final SaveResult[] saveResultArray =
         partnerConnection.update(sObjects.toArray(new SObject[sObjects.size()]));
-    loggingSaveErrorMessage(saveResultArray);
-  }
-
-  private void loggingSaveErrorMessage(final SaveResult[] saveResultArray) {
-    final List<SaveResult> saveResults = Arrays.asList(saveResultArray);
-    saveResults.forEach(
-        result -> {
-          if (!result.isSuccess()) {
-            final List<String> errors =
-                Arrays.asList(result.getErrors()).stream()
-                    .map(e -> e.getStatusCode() + ":" + e.getMessage())
-                    .collect(Collectors.toList());
-            logger.warn(String.join(",", errors));
-          }
-        });
+    return errorHandler.handleErrors(sObjects, saveResultArray);
   }
 
   private enum ActionType {
