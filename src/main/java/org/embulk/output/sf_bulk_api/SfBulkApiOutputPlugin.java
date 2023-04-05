@@ -26,7 +26,9 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     final List<TaskReport> taskReports = control.run(task.dump());
     final long failures =
         taskReports.stream().mapToLong(taskReport -> taskReport.get(long.class, "failures")).sum();
-    if (taskReports.stream().anyMatch(taskReport -> taskReport.get(boolean.class, "failed"))) {
+    final boolean failed =
+        taskReports.stream().anyMatch(taskReport -> taskReport.get(boolean.class, "failed"));
+    if (task.getThrowIfFailed() && failed) {
       throw new DataException(String.format("There are %,d failures", failures));
     }
     return Exec.newConfigDiff();

@@ -31,4 +31,8 @@ interface PluginTask extends Task {
   @Config("upsert_key")
   @ConfigDefault("\"key\"")
   String getUpsertKey();
+
+  @Config("throw_if_failed")
+  @ConfigDefault("\"true\"")
+  boolean getThrowIfFailed();
 }
