@@ -40,14 +40,30 @@ public class ErrorHandler {
     if (ABORT_EXCEPTION_CODES.contains(fault.getExceptionCode())) {
       throw new AbortException(fault); // Abort immediately
     }
-    final String exception =
-        String.format("%s(%s)", fault.getExceptionCode(), fault.getExceptionMessage());
-    sObjects.forEach(sObject -> log(sObject, exception));
+    sObjects.forEach(sObject -> log(sObject, fault));
     return sObjects.size();
   }
 
-  private void log(final SObject sObject, final String exception) {
-    logger.warn(String.format("object:%s,exception:%s", getObject(sObject), exception));
+  private void log(final SObject sObject, final ApiFault fault) {
+    logger.error(String.format("[output sf_bulk_api failure] %s", getFailure(sObject, fault)));
+  }
+
+  private String getFailure(final SObject sObject, final ApiFault fault) {
+    final Map<String, Object> map = new LinkedHashMap<>();
+    map.put("object", getObject(sObject));
+    map.put("errors", getErrors(fault));
+    return GSON.toJson(map);
+  }
+
+  private List<Map<String, Object>> getErrors(final ApiFault fault) {
+    return Arrays.stream(new ApiFault[] {fault}).map(this::getError).collect(Collectors.toList());
+  }
+
+  private Map<String, Object> getError(final ApiFault fault) {
+    final Map<String, Object> map = new LinkedHashMap<>();
+    map.put("code", fault.getExceptionCode());
+    map.put("message", fault.getExceptionMessage());
+    return map;
   }
 
   public long handleErrors(final List<SObject> sObjects, final SaveResult[] results) {
@@ -104,13 +120,20 @@ public class ErrorHandler {
     if (!result.isFailure()) {
       return;
     }
-    logger.warn(String.format("object:%s,errors:%s", getObject(sObject), getErrors(result)));
+    logger.error(String.format("[output sf_bulk_api failure] %s", getFailure(sObject, result)));
   }
 
-  private String getObject(final SObject sObject) {
+  private String getFailure(final SObject sObject, final Result result) {
+    final Map<String, Object> map = new LinkedHashMap<>();
+    map.put("object", getObject(sObject));
+    map.put("errors", getErrors(result));
+    return GSON.toJson(map);
+  }
+
+  private Map<String, Object> getObject(final SObject sObject) {
     final Map<String, Object> map = new LinkedHashMap<>();
     schema.getColumns().forEach(column -> map.put(column.getName(), getField(sObject, column)));
-    return GSON.toJson(map);
+    return map;
   }
 
   private Object getField(final SObject sObject, final Column column) {
@@ -132,15 +155,16 @@ public class ErrorHandler {
     }
   }
 
-  private String getErrors(final Result result) {
+  private List<Map<String, Object>> getErrors(final Result result) {
+    return Arrays.stream(result.getErrors()).map(this::getError).collect(Collectors.toList());
+  }
+
+  private Map<String, Object> getError(final IError error) {
     final Map<String, Object> map = new LinkedHashMap<>();
-    Arrays.stream(result.getErrors())
-        .forEach(
-            error ->
-                map.put(
-                    String.join(",", error.getFields()),
-                    String.format("%s(%s)", error.getStatusCode(), error.getMessage())));
-    return GSON.toJson(map);
+    map.put("code", error.getStatusCode());
+    map.put("message", error.getMessage());
+    map.put("fields", error.getFields());
+    return map;
   }
 
   private interface Result {
