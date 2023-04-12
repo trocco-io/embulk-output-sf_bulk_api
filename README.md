@@ -1,32 +1,40 @@
-# Sf Bulk Api file output plugin for Embulk
+# embulk-output-sf_bulk_api
 
-TODO: Write short description here and build.gradle file.
+Embulk output plugin for Salesforce Bulk API.
 
 ## Overview
 
-* **Plugin type**: file output
+* **Plugin type**: output
 * **Load all or nothing**: no
 * **Resume supported**: no
-* **Cleanup supported**: yes
 
 ## Configuration
 
-- **option1**: description (integer, required)
-- **option2**: description (string, default: `"myvalue"`)
-- **option3**: description (string, default: `null`)
+- **username**: Login username (string, required)
+- **password**: Login password (string, required)
+- **security_token**: User’s security token (string, required)
+- **auth_end_point**: SOAP API authentication endpoint (string, default: `https://login.salesforce.com/services/Soap/u/`)
+- **api_version**: SOAP API version (string, default: `46.0`)
+- **object**: Salesforce object (sObject) type (string, required)
+- **action_type**: Action type (`insert`, `update`, or `upsert`, required)
+- **upsert_key**: Name of the external ID field (string, required when `upsert` action, default: `key`)
+- **throw_if_failed**: Whether to throw exception at the end of transaction if there are one or more failures (boolean, default: `true`)
 
 ## Example
 
 ```yaml
 out:
   type: sf_bulk_api
-  option1: example1
-  option2: example2
+  username: username
+  password: password
+  security_token: security_token
+  object: ExampleCustomObject__c
+  action_type: upsert
+  upsert_key: Name
 ```
-
 
 ## Build
 
 ```
-$ ./gradlew gem  # -t to watch change of files and rebuild continuously
+$ ./gradlew gem
 ```
