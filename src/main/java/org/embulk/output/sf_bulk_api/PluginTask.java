@@ -4,7 +4,7 @@ import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 
-interface PluginTask extends Task {
+public interface PluginTask extends Task {
   @Config("username")
   String getUsername();
 

@@ -12,7 +12,7 @@ import org.joda.time.DateTimeZone;
 public class SForceColumnVisitor implements ColumnVisitor {
   private final SObject record;
   private final PageReader pageReader;
-  private static int MILLISECOND = 1000;
+  private static final int MILLISECOND = 1000;
 
   public SForceColumnVisitor(SObject record, PageReader pageReader) {
     this.record = record;
@@ -21,37 +21,57 @@ public class SForceColumnVisitor implements ColumnVisitor {
 
   @Override
   public void booleanColumn(Column column) {
-    record.addField(column.getName(), pageReader.getBoolean(column));
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      record.addField(column.getName(), pageReader.getBoolean(column));
+    }
   }
 
   @Override
   public void longColumn(Column column) {
-    record.addField(column.getName(), Long.toString(pageReader.getLong(column)));
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      record.addField(column.getName(), Long.toString(pageReader.getLong(column)));
+    }
   }
 
   @Override
   public void doubleColumn(Column column) {
-    record.addField(column.getName(), Double.toString(pageReader.getDouble(column)));
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      record.addField(column.getName(), Double.toString(pageReader.getDouble(column)));
+    }
   }
 
   @Override
   public void stringColumn(Column column) {
-    record.addField(column.getName(), pageReader.getString(column));
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      record.addField(column.getName(), pageReader.getString(column));
+    }
   }
 
   @Override
   public void timestampColumn(Column column) {
-    Timestamp timestamp = pageReader.getTimestamp(column);
-    if (timestamp != null) {
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      Timestamp timestamp = pageReader.getTimestamp(column);
       DateTime dateTime = new DateTime(timestamp.getEpochSecond() * MILLISECOND, DateTimeZone.UTC);
       record.addField(column.getName(), dateTime.toCalendar(Locale.ENGLISH));
-    } else {
-      record.addField(column.getName(), null);
     }
   }
 
   @Override
   public void jsonColumn(Column column) {
-    record.addField(column.getName(), pageReader.getString(column));
+    if (pageReader.isNull(column)) {
+      record.addField(column.getName(), null);
+    } else {
+      record.addField(column.getName(), pageReader.getString(column));
+    }
   }
 }
