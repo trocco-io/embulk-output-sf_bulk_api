@@ -32,6 +32,10 @@ public interface PluginTask extends Task {
   @ConfigDefault("\"key\"")
   String getUpsertKey();
 
+  @Config("ignore_nulls")
+  @ConfigDefault("\"true\"")
+  boolean getIgnoreNulls();
+
   @Config("throw_if_failed")
   @ConfigDefault("\"true\"")
   boolean getThrowIfFailed();
