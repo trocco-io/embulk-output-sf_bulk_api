@@ -47,7 +47,10 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
       while (pageReader.nextRecord()) {
         final SObject record = new SObject();
         record.setType(this.pluginTask.getObject());
-        pageReader.getSchema().visitColumns(new SForceColumnVisitor(record, pageReader));
+        SForceColumnVisitor visitor =
+            new SForceColumnVisitor(record, pageReader, pluginTask.getIgnoreNulls());
+        pageReader.getSchema().visitColumns(visitor);
+        record.setFieldsToNull(visitor.getFieldsToNull());
         records.add(record);
         if (records.size() >= BATCH_SIZE) {
           try {

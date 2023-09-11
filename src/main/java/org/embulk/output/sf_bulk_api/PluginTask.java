@@ -4,7 +4,7 @@ import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
 
-interface PluginTask extends Task {
+public interface PluginTask extends Task {
   @Config("username")
   String getUsername();
 
@@ -31,6 +31,10 @@ interface PluginTask extends Task {
   @Config("upsert_key")
   @ConfigDefault("\"key\"")
   String getUpsertKey();
+
+  @Config("ignore_nulls")
+  @ConfigDefault("\"true\"")
+  boolean getIgnoreNulls();
 
   @Config("throw_if_failed")
   @ConfigDefault("\"true\"")
