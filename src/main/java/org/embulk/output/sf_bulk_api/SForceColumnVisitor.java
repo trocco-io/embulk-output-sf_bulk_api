@@ -42,7 +42,8 @@ public class SForceColumnVisitor implements ColumnVisitor {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), Long.toString(pageReader.getLong(column)));
+      // number type appears to be double type
+      record.addField(column.getName(), (double) pageReader.getLong(column));
     }
   }
 
@@ -51,7 +52,7 @@ public class SForceColumnVisitor implements ColumnVisitor {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), Double.toString(pageReader.getDouble(column)));
+      record.addField(column.getName(), pageReader.getDouble(column));
     }
   }
 
