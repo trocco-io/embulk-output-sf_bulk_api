@@ -42,7 +42,10 @@ public class SForceColumnVisitor implements ColumnVisitor {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), Long.toString(pageReader.getLong(column)));
+      // The number in SaleForce is treated as a real number. So it is added as double type.
+      // https://help.salesforce.com/s/articleView?id=sf.custom_field_types.htm&type=5
+      // If it is added as long type, it couldn't upsert values correctly.
+      record.addField(column.getName(), (double) pageReader.getLong(column));
     }
   }
 
@@ -51,7 +54,7 @@ public class SForceColumnVisitor implements ColumnVisitor {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), Double.toString(pageReader.getDouble(column)));
+      record.addField(column.getName(), pageReader.getDouble(column));
     }
   }
 
