@@ -146,10 +146,8 @@ public class ErrorHandler {
       return Timestamp.ofInstant(((Calendar) field).toInstant()).toString();
     } else if ("boolean".equals(type)) {
       return Boolean.valueOf(field.toString());
-    } else if ("double".equals(type)) {
+    } else if ("double".equals(type) || "long".equals(type)) {
       return Double.valueOf(field.toString());
-    } else if ("long".equals(type)) {
-      return Long.valueOf(field.toString());
     } else {
       return field.toString();
     }
