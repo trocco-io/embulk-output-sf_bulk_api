@@ -7,11 +7,9 @@ import com.sforce.soap.partner.UpsertResult;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +25,8 @@ public class ForceClient {
   public ForceClient(final PluginTask pluginTask, final ErrorHandler errorHandler)
       throws ConnectionException {
     setConnectorConfigCreaters(pluginTask);
-    ConnectorConfigCreater connectorConfigCreater = connectorConfigCreaters.get(pluginTask.getAuthMethod());
+    ConnectorConfigCreater connectorConfigCreater =
+        connectorConfigCreaters.get(pluginTask.getAuthMethod());
     ConnectorConfig connectorConfig = connectorConfigCreater.createConnectorConfig();
     this.partnerConnection = Connector.newConnection(connectorConfig);
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
@@ -53,10 +52,10 @@ public class ForceClient {
     this.partnerConnection.logout();
   }
 
-  private void setConnectorConfigCreaters(PluginTask pluginTask)
-  {
-      connectorConfigCreaters.put(AuthMethod.oauth, new OauthConnectorConfigCreater(pluginTask));
-      connectorConfigCreaters.put(AuthMethod.user_password, new UserPasswordConnectorConfigCreater(pluginTask));
+  private void setConnectorConfigCreaters(PluginTask pluginTask) {
+    connectorConfigCreaters.put(AuthMethod.oauth, new OauthConnectorConfigCreater(pluginTask));
+    connectorConfigCreaters.put(
+        AuthMethod.user_password, new UserPasswordConnectorConfigCreater(pluginTask));
   }
 
   private long insert(final List<SObject> sObjects) throws ConnectionException {
