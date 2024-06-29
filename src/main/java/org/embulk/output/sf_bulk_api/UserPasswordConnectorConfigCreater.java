@@ -18,7 +18,7 @@ public class UserPasswordConnectorConfigCreater implements ConnectorConfigCreate
         ConnectorConfig config = new ConnectorConfig();
         config.setUsername(pluginTask.getUsername().get());
         config.setPassword(pluginTask.getPassword().get() + pluginTask.getSecurityToken().get());
-        config.setAuthEndpoint(pluginTask.getAuthEndPoint().get() + pluginTask.getApiVersion());
+        config.setAuthEndpoint(pluginTask.getAuthEndPoint().get() + pluginTask.getApiVersion() + "/");
 
         return config;
     }
