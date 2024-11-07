@@ -2,14 +2,13 @@ package org.embulk.output.sf_bulk_api;
 
 import com.sforce.soap.partner.sobject.SObject;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageReader;
 import org.embulk.spi.time.Timestamp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 public class SForceColumnVisitor implements ColumnVisitor {
   private final List<String> fieldsToNull = new ArrayList<>();
@@ -73,8 +72,9 @@ public class SForceColumnVisitor implements ColumnVisitor {
       addFieldsToNull(column);
     } else {
       Timestamp timestamp = pageReader.getTimestamp(column);
-      DateTime dateTime = new DateTime(timestamp.getEpochSecond() * MILLISECOND, DateTimeZone.UTC);
-      record.addField(column.getName(), dateTime.toCalendar(Locale.ENGLISH));
+      Calendar calendar = Calendar.getInstance(Locale.ENGLISH);
+      calendar.setTimeInMillis(timestamp.getInstant().toEpochMilli());
+      record.addField(column.getName(), calendar);
     }
   }
 
