@@ -20,9 +20,10 @@ import org.slf4j.LoggerFactory;
 public class SfBulkApiOutputPlugin implements OutputPlugin {
   private final Logger logger = LoggerFactory.getLogger(SfBulkApiOutputPlugin.class);
 
-  protected static final ConfigMapperFactory CONFIG_MAPPER_FACTORY =
+  public static final ConfigMapperFactory CONFIG_MAPPER_FACTORY =
       ConfigMapperFactory.builder().addDefaultModules().build();
 
+  @SuppressWarnings("deprecation") // For the use of task.dump()
   @Override
   public ConfigDiff transaction(
       ConfigSource config, org.embulk.spi.Schema schema, int taskCount, Control control) {
@@ -52,6 +53,8 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       int taskCount,
       List<TaskReport> successTaskReports) {}
 
+  // For the use of org.embulk.spi.PageReaderのPageReader(org.embulk.spi.Schema).
+  @SuppressWarnings("deprecation")
   @Override
   public TransactionalPageOutput open(
       TaskSource taskSource, org.embulk.spi.Schema schema, int taskIndex) {

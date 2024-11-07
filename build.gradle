@@ -51,6 +51,11 @@ embulkPlugin {
     type = "sf_bulk_api"
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    options.encoding = "UTF-8"
+}
+
 gem {
     from("LICENSE.txt")
     authors = ["dododo8m"]

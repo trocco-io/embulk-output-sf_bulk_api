@@ -8,7 +8,6 @@ import java.util.Locale;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageReader;
-import org.embulk.spi.time.Timestamp;
 
 public class SForceColumnVisitor implements ColumnVisitor {
   private final List<String> fieldsToNull = new ArrayList<>();
@@ -66,12 +65,14 @@ public class SForceColumnVisitor implements ColumnVisitor {
     }
   }
 
+  // For the use of org.embulk.spi.time.Timestamp and pageReader.getTimestamp
+  @SuppressWarnings("deprecation")
   @Override
   public void timestampColumn(Column column) {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      Timestamp timestamp = pageReader.getTimestamp(column);
+      org.embulk.spi.time.Timestamp timestamp = pageReader.getTimestamp(column);
       Calendar calendar = Calendar.getInstance(Locale.ENGLISH);
       calendar.setTimeInMillis(timestamp.getInstant().toEpochMilli());
       record.addField(column.getName(), calendar);
