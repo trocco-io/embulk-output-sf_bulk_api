@@ -151,7 +151,6 @@ public class TestSfBulkApiFileOutputPlugin {
 
   @Test
   public void testAllEmbulkTypes() throws IOException, InterruptedException {
-    // NOTE: If the type is Json, an input value is ignored. The id value is used.
     testSuccessRun(
         newDefaultConfigSource(mockWebServer).set("action_type", "insert"),
         new Column[] {
@@ -168,8 +167,8 @@ public class TestSfBulkApiFileOutputPlugin {
         },
         new String[] {"string", "double", "double", "boolean", "dateTime", "string"},
         new String[] {
-          "id0,100.0,0.0,true,1999-12-31T15:00:00.000Z,id0",
-          "id1,-200.0,1.0,false,2001-02-03T04:05:06.700Z,id1"
+          "id0,100.0,0.0,true,1999-12-31T15:00:00.000Z,{\"k0\":\"key1\"}",
+          "id1,-200.0,1.0,false,2001-02-03T04:05:06.700Z,{\"k0\":[0]}"
         });
   }
 
