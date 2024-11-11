@@ -41,8 +41,15 @@ dependencies {
 
     testImplementation("org.embulk:embulk-api:${embulkVersion}")
     testImplementation("org.embulk:embulk-spi:${embulkVersion}")
+    testImplementation "org.embulk:embulk-core:${embulkVersion}"
+    testImplementation "org.embulk:embulk-deps:${embulkVersion}"
+    testImplementation "org.embulk:embulk-junit4:${embulkVersion}"
+    testImplementation "org.embulk:embulk-input-file:${embulkVersion}"
+    testImplementation "org.embulk:embulk-parser-csv:${embulkVersion}"
+
     testImplementation "junit:junit:4.+"
     testImplementation "org.mockito:mockito-inline:4.11.0"
+    testImplementation "com.squareup.okhttp3:mockwebserver:4.11.0"
 }
 
 embulkPlugin {
@@ -54,6 +61,11 @@ embulkPlugin {
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     options.encoding = "UTF-8"
+}
+
+test {
+    forkEvery = 1
+    maxParallelForks = 1
 }
 
 gem {
