@@ -79,12 +79,13 @@ public class SForceColumnVisitor implements ColumnVisitor {
     }
   }
 
+  @SuppressWarnings("deprecation") // For the use of pageReader.getJson
   @Override
   public void jsonColumn(Column column) {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), pageReader.getString(column));
+      record.addField(column.getName(), pageReader.getJson(column).toJson());
     }
   }
 
