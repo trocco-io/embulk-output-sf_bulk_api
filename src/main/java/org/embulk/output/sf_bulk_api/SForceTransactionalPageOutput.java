@@ -23,6 +23,8 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
   private final PageReader pageReader;
   private final PluginTask pluginTask;
   private final ErrorHandler errorHandler;
+  private final ErrorFileLogger errorFileLogger;
+  private final int taskIndex;
 
   private final Logger logger = LoggerFactory.getLogger(SForceTransactionalPageOutput.class);
   private boolean failed;
@@ -32,11 +34,22 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
       ForceClient forceClient,
       PageReader pageReader,
       PluginTask pluginTask,
-      ErrorHandler errorHandler) {
+      ErrorHandler errorHandler,
+      int taskIndex) {
     this.forceClient = forceClient;
     this.pageReader = pageReader;
     this.pluginTask = pluginTask;
     this.errorHandler = errorHandler;
+    this.taskIndex = taskIndex;
+    
+    // エラーファイル出力の初期化
+    this.errorFileLogger = new ErrorFileLogger(
+        pluginTask.getErrorOutputPath().orElse(null),
+        taskIndex
+    );
+    
+    // ErrorHandlerにErrorFileLoggerを設定
+    errorHandler.setErrorFileLogger(errorFileLogger);
   }
 
   @Override
@@ -88,6 +101,15 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
 
   @Override
   public void close() {
+    // エラーファイルをクローズ
+    if (errorFileLogger != null) {
+      try {
+        errorFileLogger.close();
+      } catch (Exception e) {
+        logger.error("Failed to close error file logger", e);
+      }
+    }
+    
     try {
       forceClient.logout();
     } catch (UnexpectedErrorFault e) {

@@ -1,5 +1,6 @@
 package org.embulk.output.sf_bulk_api;
 
+import java.util.Optional;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
 import org.embulk.config.Task;
@@ -39,4 +40,8 @@ public interface PluginTask extends Task {
   @Config("throw_if_failed")
   @ConfigDefault("\"true\"")
   boolean getThrowIfFailed();
+
+  @Config("error_output_path")
+  @ConfigDefault("null")
+  Optional<String> getErrorOutputPath();
 }

@@ -55,7 +55,7 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       final ErrorHandler handler = new ErrorHandler(schema);
       final ForceClient client = new ForceClient(task, handler);
       PageReader pageReader = new PageReader(schema);
-      return new SForceTransactionalPageOutput(client, pageReader, task, handler);
+      return new SForceTransactionalPageOutput(client, pageReader, task, handler, taskIndex);
     } catch (ConnectionException e) {
       logger.error(e.getMessage(), e);
       throw new ConfigException(e);

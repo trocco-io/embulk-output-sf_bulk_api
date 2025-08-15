@@ -31,9 +31,14 @@ public class ErrorHandler {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Schema schema;
+  private ErrorFileLogger errorFileLogger;
 
   public ErrorHandler(final Schema schema) {
     this.schema = schema;
+  }
+  
+  public void setErrorFileLogger(ErrorFileLogger errorFileLogger) {
+    this.errorFileLogger = errorFileLogger;
   }
 
   public long handleFault(final List<SObject> sObjects, final ApiFault fault) {
@@ -112,15 +117,20 @@ public class ErrorHandler {
           String.format("%d != %d", sObjects.size(), results.size()));
     }
     IntStream.range(0, sObjects.size())
-        .forEach(index -> log(sObjects.get(index), results.get(index)));
+        .forEach(index -> log(sObjects.get(index), results.get(index), index));
     return results.stream().filter(Result::isFailure).count();
   }
 
-  private void log(final SObject sObject, final Result result) {
+  private void log(final SObject sObject, final Result result, final int index) {
     if (!result.isFailure()) {
       return;
     }
     logger.error(String.format("[output sf_bulk_api failure] %s", getFailure(sObject, result)));
+    
+    // ErrorFileLoggerにもエラーを記録
+    if (errorFileLogger != null) {
+      errorFileLogger.logError(sObject, result.getErrors(), index);
+    }
   }
 
   private String getFailure(final SObject sObject, final Result result) {
