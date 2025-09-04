@@ -7,12 +7,20 @@ import com.sforce.soap.partner.UpsertResult;
 import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.fault.ExceptionCode;
 import com.sforce.soap.partner.sobject.SObject;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.embulk.spi.Column;
@@ -31,9 +39,44 @@ public class ErrorHandler {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Schema schema;
+  private final Optional<BufferedWriter> errorFileWriter;
 
   public ErrorHandler(final Schema schema) {
     this.schema = schema;
+    this.errorFileWriter = Optional.empty();
+  }
+
+  public ErrorHandler(final Schema schema, final String errorFilePath, final int taskIndex) {
+    this.schema = schema;
+    this.errorFileWriter = createErrorFileWriter(errorFilePath, taskIndex);
+  }
+
+  private Optional<BufferedWriter> createErrorFileWriter(String outputPath, int taskIndex) {
+    if (outputPath == null || outputPath.trim().isEmpty()) {
+      return Optional.empty();
+    }
+
+    try {
+      String taskFilePath = String.format("%s_task%03d.jsonl", outputPath, taskIndex);
+      Path filePath = Paths.get(taskFilePath);
+
+      // Create directories if needed
+      Path parent = filePath.getParent();
+      if (parent != null && !Files.exists(parent)) {
+        Files.createDirectories(parent);
+      }
+
+      BufferedWriter writer =
+          Files.newBufferedWriter(
+              filePath,
+              StandardCharsets.UTF_8,
+              StandardOpenOption.CREATE,
+              StandardOpenOption.APPEND);
+      return Optional.of(writer);
+    } catch (IOException e) {
+      logger.error("Failed to create error file writer", e);
+      return Optional.empty();
+    }
   }
 
   public long handleFault(final List<SObject> sObjects, final ApiFault fault) {
@@ -45,7 +88,9 @@ public class ErrorHandler {
   }
 
   private void log(final SObject sObject, final ApiFault fault) {
-    logger.error(String.format("[output sf_bulk_api failure] %s", getFailure(sObject, fault)));
+    String failureJson = getFailure(sObject, fault);
+    logger.error(String.format("[output sf_bulk_api failure] %s", failureJson));
+    writeToErrorFile(failureJson);
   }
 
   private String getFailure(final SObject sObject, final ApiFault fault) {
@@ -120,7 +165,9 @@ public class ErrorHandler {
     if (!result.isFailure()) {
       return;
     }
-    logger.error(String.format("[output sf_bulk_api failure] %s", getFailure(sObject, result)));
+    String failureJson = getFailure(sObject, result);
+    logger.error(String.format("[output sf_bulk_api failure] %s", failureJson));
+    writeToErrorFile(failureJson);
   }
 
   private String getFailure(final SObject sObject, final Result result) {
@@ -163,6 +210,30 @@ public class ErrorHandler {
     map.put("message", error.getMessage());
     map.put("fields", error.getFields());
     return map;
+  }
+
+  private void writeToErrorFile(String json) {
+    errorFileWriter.ifPresent(
+        writer -> {
+          try {
+            writer.write(json);
+            writer.newLine();
+            writer.flush();
+          } catch (IOException e) {
+            logger.error("Failed to write to error file", e);
+          }
+        });
+  }
+
+  public void close() {
+    errorFileWriter.ifPresent(
+        writer -> {
+          try {
+            writer.close();
+          } catch (IOException e) {
+            logger.error("Failed to close error file writer", e);
+          }
+        });
   }
 
   private interface Result {
