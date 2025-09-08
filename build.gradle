@@ -7,7 +7,6 @@ plugins {
 import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
-    jcenter()
 }
 configurations {
     provided
@@ -27,8 +26,8 @@ version = {
 
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.17"
-    provided "org.embulk:embulk-core:0.9.17"
+    compile  "org.embulk:embulk-core:0.9.23"
+    provided "org.embulk:embulk-core:0.9.23"
     // https://mvnrepository.com/artifact/com.force.api/force-wsc
     compile group: 'com.force.api', name: 'force-wsc', version: '47.0.0'
     // https://mvnrepository.com/artifact/com.force.api/force-partner-api
