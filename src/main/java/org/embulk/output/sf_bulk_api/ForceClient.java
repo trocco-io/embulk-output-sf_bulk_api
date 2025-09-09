@@ -20,14 +20,14 @@ public class ForceClient {
   private final ActionType actionType;
   private final String upsertKey;
   private final ErrorHandler errorHandler;
-  private final Map<AuthMethod, ConnectorConfigCreater> connectorConfigCreaters = new HashMap<>();
+  private final Map<AuthMethod, ConnectorConfigCreator> connectorConfigCreators = new HashMap<>();
 
   public ForceClient(final PluginTask pluginTask, final ErrorHandler errorHandler)
       throws ConnectionException {
-    setConnectorConfigCreaters(pluginTask);
-    ConnectorConfigCreater connectorConfigCreater =
-        connectorConfigCreaters.get(pluginTask.getAuthMethod());
-    ConnectorConfig connectorConfig = connectorConfigCreater.createConnectorConfig();
+    setConnectorConfigCreators(pluginTask);
+    ConnectorConfigCreator connectorConfigCreator =
+        connectorConfigCreators.get(pluginTask.getAuthMethod());
+    ConnectorConfig connectorConfig = connectorConfigCreator.createConnectorConfig();
     this.partnerConnection = Connector.newConnection(connectorConfig);
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
     this.upsertKey = pluginTask.getUpsertKey();
@@ -52,10 +52,10 @@ public class ForceClient {
     this.partnerConnection.logout();
   }
 
-  private void setConnectorConfigCreaters(PluginTask pluginTask) {
-    connectorConfigCreaters.put(AuthMethod.oauth, new OauthConnectorConfigCreater(pluginTask));
-    connectorConfigCreaters.put(
-        AuthMethod.user_password, new UserPasswordConnectorConfigCreater(pluginTask));
+  private void setConnectorConfigCreators(PluginTask pluginTask) {
+    connectorConfigCreators.put(AuthMethod.oauth, new OauthConnectorConfigCreator(pluginTask));
+    connectorConfigCreators.put(
+        AuthMethod.user_password, new UserPasswordConnectorConfigCreator(pluginTask));
   }
 
   private long insert(final List<SObject> sObjects) throws ConnectionException {

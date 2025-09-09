@@ -3,10 +3,10 @@ package org.embulk.output.sf_bulk_api;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
 
-public class UserPasswordConnectorConfigCreater implements ConnectorConfigCreater {
+public class UserPasswordConnectorConfigCreator implements ConnectorConfigCreator {
   final PluginTask pluginTask;
 
-  UserPasswordConnectorConfigCreater(final PluginTask pluginTask) {
+  UserPasswordConnectorConfigCreator(final PluginTask pluginTask) {
     this.pluginTask = pluginTask;
   }
 

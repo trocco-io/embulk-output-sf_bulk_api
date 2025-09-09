@@ -28,7 +28,7 @@ Embulk output plugin for Salesforce Bulk API.
 
 ## Example
 
-### `user_passsword`
+### `user_password`
 ```yaml
 out:
   type: sf_bulk_api

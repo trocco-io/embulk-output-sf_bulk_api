@@ -2,10 +2,10 @@ package org.embulk.output.sf_bulk_api;
 
 import com.sforce.ws.ConnectorConfig;
 
-public class OauthConnectorConfigCreater implements ConnectorConfigCreater {
+public class OauthConnectorConfigCreator implements ConnectorConfigCreator {
   final PluginTask pluginTask;
 
-  OauthConnectorConfigCreater(final PluginTask pluginTask) {
+  OauthConnectorConfigCreator(final PluginTask pluginTask) {
     this.pluginTask = pluginTask;
   }
 
