@@ -10,11 +10,16 @@ Embulk output plugin for Salesforce Bulk API.
 
 ## Configuration
 
-- **username**: Login username (string, required)
-- **password**: Login password (string, required)
-- **security_token**: User’s security token (string, required)
-- **auth_end_point**: SOAP API authentication endpoint (string, default: `https://login.salesforce.com/services/Soap/u/`)
-- **api_version**: SOAP API version (string, default: `46.0`)
+- **auth_method**: Select `user_password` or `oauth` (string, default: `user_password`)
+- If auth method is `user_password`
+  - **username**: Login username (string, required)
+  - **password**: Login password (string, required)
+  - **security_token**: User’s security token (string, required)
+  - **api_version**: SOAP API version (string, default: `46.0`)
+  - **auth_end_point**: SOAP API authentication endpoint (string, default: `https://login.salesforce.com/services/Soap/u/`)
+- If auth method is `oauth`
+  - **server_url**: Oauth server url (string, required)
+  - **access_token**: Oauth access token (string, required)
 - **object**: Salesforce object (sObject) type (string, required)
 - **action_type**: Action type (`insert`, `update`, or `upsert`, required)
 - **upsert_key**: Name of the external ID field (string, required when `upsert` action, default: `key`)
@@ -23,12 +28,25 @@ Embulk output plugin for Salesforce Bulk API.
 
 ## Example
 
+### `user_password`
 ```yaml
 out:
   type: sf_bulk_api
   username: username
   password: password
   security_token: security_token
+  object: ExampleCustomObject__c
+  action_type: upsert
+  upsert_key: Name
+```
+
+### `oauth`
+```yaml
+out:
+  type: sf_bulk_api
+  auth_method: oauth
+  server_url: server_url
+  access_token: access_token
   object: ExampleCustomObject__c
   action_type: upsert
   upsert_key: Name
