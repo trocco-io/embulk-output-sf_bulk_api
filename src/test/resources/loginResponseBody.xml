@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope
+        xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+        xmlns="urn:partner.soap.sforce.com"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Body>
+        <loginResponse>
+            <result>
+                <metadataServerUrl>http://localhost:18888/services/Soap/m/46.0/server</metadataServerUrl>
+                <passwordExpired>false</passwordExpired>
+                <sandbox>false</sandbox>
+                <serverUrl>http://localhost:18888/services/Soap/u/46.0/server</serverUrl>
+                <sessionId>sessionId</sessionId>
+                <userId>userId</userId>
+                <userInfo>
+                    <accessibilityMode>false</accessibilityMode>
+                    <chatterExternal>false</chatterExternal>
+                    <currencySymbol>￥</currencySymbol>
+                    <orgAttachmentFileSizeLimit>26214400</orgAttachmentFileSizeLimit>
+                    <orgDefaultCurrencyIsoCode>JPY</orgDefaultCurrencyIsoCode>
+                    <orgDefaultCurrencyLocale>ja_JP</orgDefaultCurrencyLocale>
+                    <orgDisallowHtmlAttachments>false</orgDisallowHtmlAttachments>
+                    <orgHasPersonAccounts>false</orgHasPersonAccounts>
+                    <organizationId>organizationId</organizationId>
+                    <organizationMultiCurrency>false</organizationMultiCurrency>
+                    <organizationName>organizationName</organizationName>
+                    <profileId>profileId</profileId>
+                    <roleId xsi:nil="true"/>
+                    <sessionSecondsValid>7200</sessionSecondsValid>
+                    <userDefaultCurrencyIsoCode xsi:nil="true"/>
+                    <userEmail>user_email@example.com</userEmail>
+                    <userFullName>userFullName</userFullName>
+                    <userId>userId</userId>
+                    <userLanguage>ja</userLanguage>
+                    <userLocale>ja_JP</userLocale>
+                    <userName>userName@example.com</userName>
+                    <userTimeZone>Asia/Tokyo</userTimeZone>
+                    <userType>Standard</userType>
+                    <userUiSkin>Theme3</userUiSkin>
+                </userInfo>
+            </result>
+        </loginResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
