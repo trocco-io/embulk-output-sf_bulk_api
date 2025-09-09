@@ -2,14 +2,12 @@ package org.embulk.output.sf_bulk_api;
 
 import com.sforce.soap.partner.sobject.SObject;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageReader;
-import org.embulk.spi.time.Timestamp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 public class SForceColumnVisitor implements ColumnVisitor {
   private final List<String> fieldsToNull = new ArrayList<>();
@@ -67,23 +65,27 @@ public class SForceColumnVisitor implements ColumnVisitor {
     }
   }
 
+  // For the use of org.embulk.spi.time.Timestamp and pageReader.getTimestamp
+  @SuppressWarnings("deprecation")
   @Override
   public void timestampColumn(Column column) {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      Timestamp timestamp = pageReader.getTimestamp(column);
-      DateTime dateTime = new DateTime(timestamp.getEpochSecond() * MILLISECOND, DateTimeZone.UTC);
-      record.addField(column.getName(), dateTime.toCalendar(Locale.ENGLISH));
+      org.embulk.spi.time.Timestamp timestamp = pageReader.getTimestamp(column);
+      Calendar calendar = Calendar.getInstance(Locale.ENGLISH);
+      calendar.setTimeInMillis(timestamp.getInstant().toEpochMilli());
+      record.addField(column.getName(), calendar);
     }
   }
 
+  @SuppressWarnings("deprecation") // For the use of pageReader.getJson
   @Override
   public void jsonColumn(Column column) {
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
-      record.addField(column.getName(), pageReader.getString(column));
+      record.addField(column.getName(), pageReader.getJson(column).toJson());
     }
   }
 
