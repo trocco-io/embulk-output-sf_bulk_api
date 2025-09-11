@@ -72,7 +72,6 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     try {
       final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
       final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
-
       final ErrorHandler handler =
           task.getErrorRecordsDetailOutputFile()
               .map(outputPath -> new ErrorHandler(schema, outputPath, taskIndex))
