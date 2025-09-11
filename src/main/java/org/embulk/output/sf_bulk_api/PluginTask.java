@@ -55,4 +55,8 @@ public interface PluginTask extends Task {
   @Config("throw_if_failed")
   @ConfigDefault("\"true\"")
   boolean getThrowIfFailed();
+
+  @Config("error_records_detail_output_file")
+  @ConfigDefault("null")
+  Optional<String> getErrorRecordsDetailOutputFile();
 }
