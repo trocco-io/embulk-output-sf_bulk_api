@@ -7,7 +7,9 @@ import com.sforce.soap.partner.UpsertResult;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +20,14 @@ public class ForceClient {
   private final ActionType actionType;
   private final String upsertKey;
   private final ErrorHandler errorHandler;
+  private final Map<AuthMethod, ConnectorConfigCreator> connectorConfigCreators = new HashMap<>();
 
   public ForceClient(final PluginTask pluginTask, final ErrorHandler errorHandler)
       throws ConnectionException {
-    final ConnectorConfig connectorConfig = createConnectorConfig(pluginTask);
+    setConnectorConfigCreators(pluginTask);
+    ConnectorConfigCreator connectorConfigCreator =
+        connectorConfigCreators.get(pluginTask.getAuthMethod());
+    ConnectorConfig connectorConfig = connectorConfigCreator.createConnectorConfig();
     this.partnerConnection = Connector.newConnection(connectorConfig);
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
     this.upsertKey = pluginTask.getUpsertKey();
@@ -46,12 +52,10 @@ public class ForceClient {
     this.partnerConnection.logout();
   }
 
-  private ConnectorConfig createConnectorConfig(final PluginTask pluginTask) {
-    final ConnectorConfig config = new ConnectorConfig();
-    config.setUsername(pluginTask.getUsername());
-    config.setPassword(pluginTask.getPassword() + pluginTask.getSecurityToken());
-    config.setAuthEndpoint(pluginTask.getAuthEndPoint() + pluginTask.getApiVersion() + "/");
-    return config;
+  private void setConnectorConfigCreators(PluginTask pluginTask) {
+    connectorConfigCreators.put(AuthMethod.oauth, new OauthConnectorConfigCreator(pluginTask));
+    connectorConfigCreators.put(
+        AuthMethod.user_password, new UserPasswordConnectorConfigCreator(pluginTask));
   }
 
   private long insert(final List<SObject> sObjects) throws ConnectionException {

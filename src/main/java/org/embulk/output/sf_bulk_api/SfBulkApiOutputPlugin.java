@@ -13,22 +13,28 @@ import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
-import org.embulk.exec.ExecutionInterruptedException;
 import org.embulk.spi.DataException;
-import org.embulk.spi.Exec;
 import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.PageReader;
 import org.embulk.spi.TransactionalPageOutput;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.TaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SfBulkApiOutputPlugin implements OutputPlugin {
   private final Logger logger = LoggerFactory.getLogger(SfBulkApiOutputPlugin.class);
 
+  public static final ConfigMapperFactory CONFIG_MAPPER_FACTORY =
+      ConfigMapperFactory.builder().addDefaultModules().build();
+
+  @SuppressWarnings("deprecation") // For the use of task.dump()
   @Override
   public ConfigDiff transaction(
       ConfigSource config, org.embulk.spi.Schema schema, int taskCount, Control control) {
-    final PluginTask task = config.loadConfig(PluginTask.class);
+    final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+    final PluginTask task = configMapper.map(config, PluginTask.class);
     final List<TaskReport> taskReports = control.run(task.dump());
     final long failures =
         taskReports.stream().mapToLong(taskReport -> taskReport.get(long.class, "failures")).sum();
@@ -37,7 +43,7 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     if (task.getThrowIfFailed() && failed) {
       throw new DataException(String.format("There are %,d failures", failures));
     }
-    return Exec.newConfigDiff();
+    return CONFIG_MAPPER_FACTORY.newConfigDiff();
   }
 
   @Override
@@ -58,11 +64,14 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     task.getErrorRecordsDetailOutputFile().ifPresent(this::concatenateErrorFiles);
   }
 
+  // For the use of org.embulk.spi.PageReaderのPageReader(org.embulk.spi.Schema).
+  @SuppressWarnings("deprecation")
   @Override
   public TransactionalPageOutput open(
       TaskSource taskSource, org.embulk.spi.Schema schema, int taskIndex) {
     try {
-      final PluginTask task = taskSource.loadTask(PluginTask.class);
+      final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+      final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
 
       final ErrorHandler handler =
           task.getErrorRecordsDetailOutputFile()
@@ -123,6 +132,12 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       }
     } catch (IOException e) {
       logger.error("Failed to concatenate error files", e);
+    }
+  }
+
+  private static class ExecutionInterruptedException extends RuntimeException {
+    public ExecutionInterruptedException(Exception e) {
+      super(e);
     }
   }
 }

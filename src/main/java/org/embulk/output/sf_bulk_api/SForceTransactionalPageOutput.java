@@ -1,5 +1,7 @@
 package org.embulk.output.sf_bulk_api;
 
+import static org.embulk.output.sf_bulk_api.SfBulkApiOutputPlugin.CONFIG_MAPPER_FACTORY;
+
 import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.fault.ExceptionCode;
 import com.sforce.soap.partner.fault.UnexpectedErrorFault;
@@ -9,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.embulk.config.TaskReport;
-import org.embulk.spi.Exec;
 import org.embulk.spi.Page;
 import org.embulk.spi.PageReader;
 import org.embulk.spi.TransactionalPageOutput;
@@ -111,7 +112,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
 
   @Override
   public TaskReport commit() {
-    final TaskReport taskReport = Exec.newTaskReport();
+    final TaskReport taskReport = CONFIG_MAPPER_FACTORY.newTaskReport();
     taskReport.set("failed", failed);
     taskReport.set("failures", failures);
     return taskReport;

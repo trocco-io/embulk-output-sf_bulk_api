@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.embulk.spi.Column;
 import org.embulk.spi.Schema;
-import org.embulk.spi.time.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,6 +210,7 @@ public class ErrorHandler {
     return map;
   }
 
+  @SuppressWarnings("deprecation") // For the use of org.embulk.spi.time.Timestamp.
   private Object getField(final SObject sObject, final Column column) {
     final Object field = sObject.getField(column.getName());
     if (field == null) {
@@ -218,7 +218,7 @@ public class ErrorHandler {
     }
     final String type = column.getType().getName();
     if ("timestamp".equals(type)) {
-      return Timestamp.ofInstant(((Calendar) field).toInstant()).toString();
+      return org.embulk.spi.time.Timestamp.ofInstant(((Calendar) field).toInstant()).toString();
     } else if ("boolean".equals(type)) {
       return Boolean.valueOf(field.toString());
     } else if ("double".equals(type) || "long".equals(type)) {
