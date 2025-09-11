@@ -58,7 +58,8 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       org.embulk.spi.Schema schema,
       int taskCount,
       List<TaskReport> successTaskReports) {
-    final PluginTask task = taskSource.loadTask(PluginTask.class);
+    final PluginTask task =
+        CONFIG_MAPPER_FACTORY.createTaskMapper().map(taskSource, PluginTask.class);
 
     // Concatenate error files if error output is configured
     task.getErrorRecordsDetailOutputFile().ifPresent(this::concatenateErrorFiles);
