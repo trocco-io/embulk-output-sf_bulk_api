@@ -99,6 +99,11 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
       logger.warn(message, e);
     } catch (ConnectionException e) {
       logger.warn(e.getMessage(), e);
+    } finally {
+      // Close error file logger
+      if (errorHandler != null) {
+        errorHandler.close();
+      }
     }
   }
 
