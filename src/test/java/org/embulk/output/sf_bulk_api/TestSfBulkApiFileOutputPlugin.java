@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.exec.PartialExecutionException;
 import org.embulk.input.file.LocalFileInputPlugin;
@@ -236,6 +237,52 @@ public class TestSfBulkApiFileOutputPlugin {
           Util.readResource("logoutRequestBody.xml"),
           Util.toStringFromGZip(mockWebServer.takeRequest()));
     }
+  }
+
+  @Test
+  public void testBatchSizeZero() {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer).set("action_type", "insert").set("batch_size", 0);
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
+  @Test
+  public void testBatchSizeOver200() {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer).set("action_type", "insert").set("batch_size", 201);
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
+  @Test
+  public void testBatchSizeCustom() throws IOException, InterruptedException {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer).set("action_type", "insert").set("batch_size", 1);
+    PluginTask task = CONFIG_MAPPER_FACTORY.createConfigMapper().map(config, PluginTask.class);
+
+    // 2 records with batch_size=1 → 2 API calls
+    mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
+    mockWebServer.enqueue(Util.mockActionSuccessResponse(task.getActionType(), 1));
+    mockWebServer.enqueue(Util.mockActionSuccessResponse(task.getActionType(), 1));
+    for (int i = 0; i < 2; i++) {
+      mockWebServer.enqueue(mockResponse("logoutResponseBody.xml"));
+    }
+    File in = Util.createInputFile(testFolder, "id:string", "id0", "id1");
+    embulk.runOutput(config, in.toPath());
+
+    // login + 2 action calls + 2 logout = 5
+    assertEquals(5, mockWebServer.getRequestCount());
   }
 
   private static String[] concat(String[] src, String elem) {

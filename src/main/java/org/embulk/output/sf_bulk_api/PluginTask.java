@@ -56,6 +56,10 @@ public interface PluginTask extends Task {
   @ConfigDefault("\"true\"")
   boolean getThrowIfFailed();
 
+  @Config("batch_size")
+  @ConfigDefault("200")
+  int getBatchSize();
+
   @Config("error_records_detail_output_file")
   @ConfigDefault("null")
   Optional<String> getErrorRecordsDetailOutputFile();

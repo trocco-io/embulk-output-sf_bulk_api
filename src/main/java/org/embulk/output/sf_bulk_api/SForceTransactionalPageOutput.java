@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SForceTransactionalPageOutput implements TransactionalPageOutput {
-  private static final Long BATCH_SIZE = 200L;
+  private final int batchSize;
 
   private final ForceClient forceClient;
   private final PageReader pageReader;
@@ -38,6 +38,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
     this.pageReader = pageReader;
     this.pluginTask = pluginTask;
     this.errorHandler = errorHandler;
+    this.batchSize = pluginTask.getBatchSize();
   }
 
   @Override
@@ -53,7 +54,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
         pageReader.getSchema().visitColumns(visitor);
         record.setFieldsToNull(visitor.getFieldsToNull());
         records.add(record);
-        if (records.size() >= BATCH_SIZE) {
+        if (records.size() >= batchSize) {
           try {
             failures += forceClient.action(records);
             failed = failures != 0;

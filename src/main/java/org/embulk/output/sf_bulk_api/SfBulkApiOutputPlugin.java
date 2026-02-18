@@ -35,6 +35,10 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       ConfigSource config, org.embulk.spi.Schema schema, int taskCount, Control control) {
     final ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
     final PluginTask task = configMapper.map(config, PluginTask.class);
+    int batchSize = task.getBatchSize();
+    if (batchSize < 1 || batchSize > 200) {
+      throw new ConfigException("batch_size must be between 1 and 200");
+    }
     final List<TaskReport> taskReports = control.run(task.dump());
     final long failures =
         taskReports.stream().mapToLong(taskReport -> taskReport.get(long.class, "failures")).sum();
