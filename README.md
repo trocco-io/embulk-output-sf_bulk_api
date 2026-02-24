@@ -25,6 +25,7 @@ Embulk output plugin for Salesforce Bulk API.
 - **upsert_key**: Name of the external ID field (string, required when `upsert` action, default: `key`)
 - **ignore_nulls**: Whether to ignore nulls or set fields to null when column is null (boolean, default: `true`)
 - **throw_if_failed**: Whether to throw exception at the end of transaction if there are one or more failures (boolean, default: `true`)
+- **batch_size**: Number of records per API call (integer, default: `200`, min: `1`, max: `200`)
 
 ## Example
 
