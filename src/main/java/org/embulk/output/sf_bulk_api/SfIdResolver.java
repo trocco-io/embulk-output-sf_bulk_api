@@ -56,8 +56,7 @@ public class SfIdResolver {
         duplicateInputKeys.add(entry.getKey());
         for (SObject r : entry.getValue()) {
           errorHandler.handleIdResolveError(
-              r,
-              "Duplicate update_key value in input: " + updateKey + "=" + entry.getKey());
+              r, "Duplicate update_key value in input: " + updateKey + "=" + entry.getKey());
           unresolvedCount++;
         }
       }
@@ -91,8 +90,7 @@ public class SfIdResolver {
       int count = keyCounts.getOrDefault(keyValue, 0);
       if (count == 0) {
         for (SObject r : recordsForKey) {
-          errorHandler.handleIdResolveError(
-              r, "No record found for " + updateKey + "=" + keyValue);
+          errorHandler.handleIdResolveError(r, "No record found for " + updateKey + "=" + keyValue);
           unresolvedCount++;
         }
       } else if (count > 1) {
@@ -128,9 +126,7 @@ public class SfIdResolver {
 
   private String buildQuery(Set<String> keyValues) {
     String inClause =
-        keyValues.stream()
-            .map(v -> "'" + escapeSoql(v) + "'")
-            .collect(Collectors.joining(","));
+        keyValues.stream().map(v -> "'" + escapeSoql(v) + "'").collect(Collectors.joining(","));
     return String.format(
         "SELECT Id, %s FROM %s WHERE %s IN (%s)", updateKey, objectType, updateKey, inClause);
   }
