@@ -60,6 +60,10 @@ public interface PluginTask extends Task {
   @ConfigDefault("200")
   int getBatchSize();
 
+  @Config("update_key")
+  @ConfigDefault("null")
+  Optional<String> getUpdateKey();
+
   @Config("error_records_detail_output_file")
   @ConfigDefault("null")
   Optional<String> getErrorRecordsDetailOutputFile();
