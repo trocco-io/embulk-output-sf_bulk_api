@@ -278,6 +278,15 @@ public class ErrorHandler {
         });
   }
 
+  public void handleIdResolveError(final SObject sObject, final String message) {
+    logger.error(String.format("[output sf_bulk_api failure] ID resolve failed: %s", message));
+
+    Map<String, Object> recordData = getObject(sObject);
+    ErrorRecord errorRecord = new ErrorRecord(recordData, "ID_RESOLVE_ERROR", message);
+    String fileFailureJson = GSON.toJson(errorRecord);
+    writeToErrorFile(fileFailureJson);
+  }
+
   public void close() {
     errorFileWriter.ifPresent(
         writer -> {

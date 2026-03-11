@@ -39,6 +39,18 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     if (batchSize < 1 || batchSize > 200) {
       throw new ConfigException("batch_size must be between 1 and 200");
     }
+    if (task.getUpdateKey().isPresent() && !"update".equals(task.getActionType())) {
+      throw new ConfigException("update_key can only be used with action_type: update");
+    }
+    if (task.getUpdateKey().isPresent()) {
+      String updateKey = task.getUpdateKey().get();
+      boolean exists =
+          schema.getColumns().stream().anyMatch(column -> column.getName().equals(updateKey));
+      if (!exists) {
+        throw new ConfigException(
+            String.format("update_key '%s' does not exist in input schema", updateKey));
+      }
+    }
     final List<TaskReport> taskReports = control.run(task.dump());
     final long failures =
         taskReports.stream().mapToLong(taskReport -> taskReport.get(long.class, "failures")).sum();

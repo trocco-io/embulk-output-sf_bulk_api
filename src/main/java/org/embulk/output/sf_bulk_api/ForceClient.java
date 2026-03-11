@@ -20,6 +20,7 @@ public class ForceClient {
   private final ActionType actionType;
   private final String upsertKey;
   private final ErrorHandler errorHandler;
+  private final SfIdResolver sfIdResolver;
   private final Map<AuthMethod, ConnectorConfigCreator> connectorConfigCreators = new HashMap<>();
 
   public ForceClient(final PluginTask pluginTask, final ErrorHandler errorHandler)
@@ -32,6 +33,17 @@ public class ForceClient {
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
     this.upsertKey = pluginTask.getUpsertKey();
     this.errorHandler = errorHandler;
+
+    if (this.actionType == ActionType.UPDATE && pluginTask.getUpdateKey().isPresent()) {
+      this.sfIdResolver =
+          new SfIdResolver(
+              this.partnerConnection,
+              pluginTask.getObject(),
+              pluginTask.getUpdateKey().get(),
+              errorHandler);
+    } else {
+      this.sfIdResolver = null;
+    }
   }
 
   public long action(final List<SObject> sObjects) throws ConnectionException {
@@ -42,10 +54,22 @@ public class ForceClient {
       case UPSERT:
         return upsert(this.upsertKey, sObjects);
       case UPDATE:
+        if (sfIdResolver != null) {
+          return updateWithExternalKey(sObjects);
+        }
         return update(sObjects);
       default:
         throw new AssertionError("Invalid actionType: " + actionType);
     }
+  }
+
+  private long updateWithExternalKey(final List<SObject> sObjects) throws ConnectionException {
+    SfIdResolver.ResolveResult resolveResult = sfIdResolver.resolve(sObjects);
+    long failures = resolveResult.getUnresolvedCount();
+    if (!resolveResult.getResolvedRecords().isEmpty()) {
+      failures += update(resolveResult.getResolvedRecords());
+    }
+    return failures;
   }
 
   public void logout() throws ConnectionException {
