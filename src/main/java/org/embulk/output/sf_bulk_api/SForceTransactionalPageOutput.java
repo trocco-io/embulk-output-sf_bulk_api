@@ -3,10 +3,7 @@ package org.embulk.output.sf_bulk_api;
 import static org.embulk.output.sf_bulk_api.SfBulkApiOutputPlugin.CONFIG_MAPPER_FACTORY;
 
 import com.sforce.soap.partner.fault.ApiFault;
-import com.sforce.soap.partner.fault.ExceptionCode;
-import com.sforce.soap.partner.fault.UnexpectedErrorFault;
 import com.sforce.soap.partner.sobject.SObject;
-import com.sforce.ws.ConnectionException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
@@ -90,21 +87,15 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
 
   @Override
   public void close() {
-    try {
-      forceClient.logout();
-    } catch (UnexpectedErrorFault e) {
-      if (ExceptionCode.INVALID_SESSION_ID.equals(e.getExceptionCode())) {
-        return; // Skip logs
-      }
-      final String message = String.format("%s(%s)", e.getExceptionCode(), e.getExceptionMessage());
-      logger.warn(message, e);
-    } catch (ConnectionException e) {
-      logger.warn(e.getMessage(), e);
-    } finally {
-      // Close error file logger
-      if (errorHandler != null) {
-        errorHandler.close();
-      }
+    // Note: logout() is intentionally not called here.
+    // Salesforce SOAP sessions are shared across concurrent connections using the same credentials.
+    // Calling logout() destroys the session for ALL holders, causing INVALID_SESSION_ID errors
+    // in any other running job that shares the session.
+    // Sessions expire automatically after the configured inactivity timeout (default 2 hours).
+
+    // Close error file logger
+    if (errorHandler != null) {
+      errorHandler.close();
     }
   }
 

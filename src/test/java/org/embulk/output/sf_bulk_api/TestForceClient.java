@@ -55,17 +55,17 @@ public class TestForceClient {
   }
 
   @Test
-  public void testLogout() throws ConnectionException, InterruptedException, IOException {
+  public void testNoLogoutCallOnClose() throws ConnectionException, InterruptedException, IOException {
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
-    mockWebServer.enqueue(mockResponse("logoutResponseBody.xml"));
+    mockWebServer.enqueue(mockActionSuccessResponse("insert", 2));
 
-    newForceClient("update").logout();
+    ForceClient forceClient = newForceClient("insert");
+    forceClient.action(newRecords(2));
 
+    // Only login + action requests should be made; no logout request
     assertEquals(2, mockWebServer.getRequestCount());
     assertEquals(
         readResource("loginRequestBody.xml"), toStringFromGZip(mockWebServer.takeRequest()));
-    assertEquals(
-        readResource("logoutRequestBody.xml"), toStringFromGZip(mockWebServer.takeRequest()));
   }
 
   private void testAction(String actionType)

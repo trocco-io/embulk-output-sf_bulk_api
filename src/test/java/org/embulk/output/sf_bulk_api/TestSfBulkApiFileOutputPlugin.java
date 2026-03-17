@@ -123,16 +123,14 @@ public class TestSfBulkApiFileOutputPlugin {
 
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
     mockWebServer.enqueue(mockActionResponse(task.getActionType(), new Boolean[] {false}));
-    for (int i = 0; i < 2; i++) {
-      mockWebServer.enqueue(mockResponse("logoutResponseBody.xml"));
-    }
     File in = Util.createInputFile(testFolder, "id:string", "id0");
     if (throwIfFailed) {
       assertThrows(PartialExecutionException.class, () -> embulk.runOutput(config, in.toPath()));
     } else {
       embulk.runOutput(config, in.toPath());
     }
-    assertEquals(4, mockWebServer.getRequestCount());
+    // login + action only; no logout call
+    assertEquals(2, mockWebServer.getRequestCount());
     assertEquals(
         Util.readResource("loginRequestBody.xml"),
         Util.toStringFromGZip(mockWebServer.takeRequest()));
@@ -143,11 +141,6 @@ public class TestSfBulkApiFileOutputPlugin {
             new String[] {"string", "double"},
             "id0,1.0");
     assertEquals(expectedBody, Util.toStringFromGZip(mockWebServer.takeRequest()));
-    for (int i = 0; i < 2; i++) {
-      assertEquals(
-          Util.readResource("logoutRequestBody.xml"),
-          Util.toStringFromGZip(mockWebServer.takeRequest()));
-    }
   }
 
   @Test
@@ -215,9 +208,6 @@ public class TestSfBulkApiFileOutputPlugin {
 
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
     mockWebServer.enqueue(mockActionResponse);
-    for (int i = 0; i < 2; i++) {
-      mockWebServer.enqueue(mockResponse("logoutResponseBody.xml"));
-    }
     String header =
         Arrays.stream(columns)
             .map(x -> String.format("%s:%s", x.getName(), x.getType()))
@@ -225,18 +215,14 @@ public class TestSfBulkApiFileOutputPlugin {
     File in = Util.createInputFile(testFolder, header, inputs);
     embulk.runOutput(config, in.toPath());
 
-    assertEquals(4, mockWebServer.getRequestCount());
+    // login + action only; no logout call
+    assertEquals(2, mockWebServer.getRequestCount());
     assertEquals(
         Util.readResource("loginRequestBody.xml"),
         Util.toStringFromGZip(mockWebServer.takeRequest()));
     String expectedBody =
         Util.actionRequestBody(task.getActionType(), outputNames, outputTypes, outputValues);
     assertEquals(expectedBody, Util.toStringFromGZip(mockWebServer.takeRequest()));
-    for (int i = 0; i < 2; i++) {
-      assertEquals(
-          Util.readResource("logoutRequestBody.xml"),
-          Util.toStringFromGZip(mockWebServer.takeRequest()));
-    }
   }
 
   @Test
@@ -275,14 +261,11 @@ public class TestSfBulkApiFileOutputPlugin {
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
     mockWebServer.enqueue(Util.mockActionSuccessResponse(task.getActionType(), 1));
     mockWebServer.enqueue(Util.mockActionSuccessResponse(task.getActionType(), 1));
-    for (int i = 0; i < 2; i++) {
-      mockWebServer.enqueue(mockResponse("logoutResponseBody.xml"));
-    }
     File in = Util.createInputFile(testFolder, "id:string", "id0", "id1");
     embulk.runOutput(config, in.toPath());
 
-    // login + 2 action calls + 2 logout = 5
-    assertEquals(5, mockWebServer.getRequestCount());
+    // login + 2 action calls; no logout
+    assertEquals(3, mockWebServer.getRequestCount());
   }
 
   private static String[] concat(String[] src, String elem) {
