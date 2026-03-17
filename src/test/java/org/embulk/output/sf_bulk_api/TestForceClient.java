@@ -55,7 +55,8 @@ public class TestForceClient {
   }
 
   @Test
-  public void testNoLogoutCallOnClose() throws ConnectionException, InterruptedException, IOException {
+  public void testNoLogoutCallOnClose()
+      throws ConnectionException, InterruptedException, IOException {
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
     mockWebServer.enqueue(mockActionSuccessResponse("insert", 2));
 
