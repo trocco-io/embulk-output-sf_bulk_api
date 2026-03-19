@@ -72,10 +72,6 @@ public class ForceClient {
     return failures;
   }
 
-  public void logout() throws ConnectionException {
-    this.partnerConnection.logout();
-  }
-
   private void setConnectorConfigCreators(PluginTask pluginTask) {
     connectorConfigCreators.put(AuthMethod.oauth, new OauthConnectorConfigCreator(pluginTask));
     connectorConfigCreators.put(
