@@ -55,6 +55,18 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     }
     Set<String> seenReferenceFields = new HashSet<>();
     for (AssociationConfig assoc : task.getAssociations()) {
+      if (assoc.getReferenceField().isEmpty()) {
+        throw new ConfigException("association reference_field must not be empty");
+      }
+      if (assoc.getReferencedObject().isEmpty()) {
+        throw new ConfigException("association referenced_object must not be empty");
+      }
+      if (assoc.getUniqueKey().isEmpty()) {
+        throw new ConfigException("association unique_key must not be empty");
+      }
+      if (assoc.getSourceColumn().isEmpty()) {
+        throw new ConfigException("association source_column must not be empty");
+      }
       boolean exists =
           schema.getColumns().stream()
               .anyMatch(col -> col.getName().equals(assoc.getSourceColumn()));

@@ -163,7 +163,10 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
       case "json":
         return reader.getJson(column).toJson();
       default:
-        return reader.getString(column);
+        throw new ConfigException(
+            String.format(
+                "Unsupported column type '%s' for association source_column '%s'",
+                column.getType().getName(), column.getName()));
     }
   }
 
