@@ -6,7 +6,9 @@ import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.sobject.SObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
@@ -27,7 +29,7 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
   private final PageReader pageReader;
   private final PluginTask pluginTask;
   private final ErrorHandler errorHandler;
-  private final List<AssociationConfig> associations;
+  private final Map<AssociationConfig, Column> associationColumns;
   private final Set<String> associationSourceColumns;
 
   private final Logger logger = LoggerFactory.getLogger(SForceTransactionalPageOutput.class);
@@ -44,7 +46,12 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
     this.pluginTask = pluginTask;
     this.errorHandler = errorHandler;
     this.batchSize = pluginTask.getBatchSize();
-    this.associations = pluginTask.getAssociations();
+    Schema schema = pageReader.getSchema();
+    List<AssociationConfig> associations = pluginTask.getAssociations();
+    this.associationColumns = new LinkedHashMap<>();
+    for (AssociationConfig assoc : associations) {
+      associationColumns.put(assoc, findColumn(schema, assoc.getSourceColumn()));
+    }
     this.associationSourceColumns =
         associations.stream().map(AssociationConfig::getSourceColumn).collect(Collectors.toSet());
   }
@@ -63,8 +70,9 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
         pageReader.getSchema().visitColumns(visitor);
 
         List<String> fieldsToNull = new ArrayList<>(Arrays.asList(visitor.getFieldsToNull()));
-        for (AssociationConfig assoc : associations) {
-          Column sourceCol = findColumn(pageReader.getSchema(), assoc.getSourceColumn());
+        for (Map.Entry<AssociationConfig, Column> entry : associationColumns.entrySet()) {
+          AssociationConfig assoc = entry.getKey();
+          Column sourceCol = entry.getValue();
           if (pageReader.isNull(sourceCol)) {
             if (!pluginTask.getIgnoreNulls()) {
               fieldsToNull.add(assoc.getReferenceField());
