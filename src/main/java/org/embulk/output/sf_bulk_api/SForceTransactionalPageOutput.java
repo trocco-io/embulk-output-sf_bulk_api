@@ -65,9 +65,13 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
         final SObject record = new SObject();
         record.setType(this.pluginTask.getObject());
         SForceColumnVisitor visitor =
-            new SForceColumnVisitor(
-                record, pageReader, pluginTask.getIgnoreNulls(), associationSourceColumns);
-        pageReader.getSchema().visitColumns(visitor);
+            new SForceColumnVisitor(record, pageReader, pluginTask.getIgnoreNulls());
+        // Visit only non-association columns. Association source_columns are not
+        // Salesforce fields and must be skipped from direct SObject field assignment.
+        // Their values are read separately in the association processing below.
+        pageReader.getSchema().getColumns().stream()
+            .filter(col -> !associationSourceColumns.contains(col.getName()))
+            .forEach(col -> col.visit(visitor));
 
         List<String> fieldsToNull = new ArrayList<>(Arrays.asList(visitor.getFieldsToNull()));
         for (Map.Entry<AssociationConfig, Column> entry : associationColumns.entrySet()) {

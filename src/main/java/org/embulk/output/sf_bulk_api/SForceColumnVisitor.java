@@ -3,10 +3,8 @@ package org.embulk.output.sf_bulk_api;
 import com.sforce.soap.partner.sobject.SObject;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageReader;
@@ -16,18 +14,11 @@ public class SForceColumnVisitor implements ColumnVisitor {
   private final SObject record;
   private final PageReader pageReader;
   private final boolean ignoreNulls;
-  private final Set<String> skipColumns;
 
-  public SForceColumnVisitor(
-      SObject record, PageReader pageReader, boolean ignoreNulls, Set<String> skipColumns) {
+  public SForceColumnVisitor(SObject record, PageReader pageReader, boolean ignoreNulls) {
     this.record = record;
     this.pageReader = pageReader;
     this.ignoreNulls = ignoreNulls;
-    this.skipColumns = skipColumns;
-  }
-
-  public SForceColumnVisitor(SObject record, PageReader pageReader, boolean ignoreNulls) {
-    this(record, pageReader, ignoreNulls, Collections.emptySet());
   }
 
   public String[] getFieldsToNull() {
@@ -36,9 +27,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
 
   @Override
   public void booleanColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
@@ -48,9 +36,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
 
   @Override
   public void longColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
@@ -63,9 +48,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
 
   @Override
   public void doubleColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
@@ -75,9 +57,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
 
   @Override
   public void stringColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
@@ -89,9 +68,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
   @SuppressWarnings("deprecation")
   @Override
   public void timestampColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
@@ -105,9 +81,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
   @SuppressWarnings("deprecation") // For the use of pageReader.getJson
   @Override
   public void jsonColumn(Column column) {
-    if (skipColumns.contains(column.getName())) {
-      return;
-    }
     if (pageReader.isNull(column)) {
       addFieldsToNull(column);
     } else {
