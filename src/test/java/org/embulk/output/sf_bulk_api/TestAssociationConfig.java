@@ -70,8 +70,7 @@ public class TestAssociationConfig {
     // Neither __c nor Id suffix → ConfigException
     ConfigException e =
         assertThrows(
-            ConfigException.class,
-            () -> AssociationConfig.deriveRelationshipName("SomeField"));
+            ConfigException.class, () -> AssociationConfig.deriveRelationshipName("SomeField"));
     assertEquals(
         "Cannot derive relationship name from reference_field 'SomeField'."
             + " Expected a standard field ending with 'Id' or a custom field ending with '__c'.",
