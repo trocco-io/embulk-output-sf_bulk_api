@@ -1,5 +1,6 @@
 package org.embulk.output.sf_bulk_api;
 
+import org.embulk.config.ConfigException;
 import org.embulk.util.config.Config;
 import org.embulk.util.config.Task;
 
@@ -37,6 +38,10 @@ public interface AssociationConfig extends Task {
     if (referenceField.endsWith("Id")) {
       return referenceField.substring(0, referenceField.length() - 2);
     }
-    return referenceField;
+    throw new ConfigException(
+        String.format(
+            "Cannot derive relationship name from reference_field '%s'."
+                + " Expected a standard field ending with 'Id' or a custom field ending with '__c'.",
+            referenceField));
   }
 }

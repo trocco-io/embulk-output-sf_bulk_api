@@ -1,7 +1,9 @@
 package org.embulk.output.sf_bulk_api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
+import org.embulk.config.ConfigException;
 import org.junit.Test;
 
 public class TestAssociationConfig {
@@ -64,9 +66,16 @@ public class TestAssociationConfig {
   }
 
   @Test
-  public void testDeriveRelationshipNameFallback() {
-    // Neither __c nor Id suffix → returned as-is
-    assertEquals("SomeField", AssociationConfig.deriveRelationshipName("SomeField"));
+  public void testDeriveRelationshipNameFallbackThrows() {
+    // Neither __c nor Id suffix → ConfigException
+    ConfigException e =
+        assertThrows(
+            ConfigException.class,
+            () -> AssociationConfig.deriveRelationshipName("SomeField"));
+    assertEquals(
+        "Cannot derive relationship name from reference_field 'SomeField'."
+            + " Expected a standard field ending with 'Id' or a custom field ending with '__c'.",
+        e.getMessage());
   }
 
   @Test
