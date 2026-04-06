@@ -14,7 +14,6 @@ public class SForceColumnVisitor implements ColumnVisitor {
   private final SObject record;
   private final PageReader pageReader;
   private final boolean ignoreNulls;
-  private static final int MILLISECOND = 1000;
 
   public SForceColumnVisitor(SObject record, PageReader pageReader, boolean ignoreNulls) {
     this.record = record;

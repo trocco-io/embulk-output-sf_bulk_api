@@ -7,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
@@ -49,6 +51,34 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       if (!exists) {
         throw new ConfigException(
             String.format("update_key '%s' does not exist in input schema", updateKey));
+      }
+    }
+    Set<String> seenReferenceFields = new HashSet<>();
+    for (AssociationConfig assoc : task.getAssociations()) {
+      if (assoc.getReferenceField().isEmpty()) {
+        throw new ConfigException("association reference_field must not be empty");
+      }
+      if (assoc.getReferencedObject().isEmpty()) {
+        throw new ConfigException("association referenced_object must not be empty");
+      }
+      if (assoc.getUniqueKey().isEmpty()) {
+        throw new ConfigException("association unique_key must not be empty");
+      }
+      if (assoc.getSourceColumn().isEmpty()) {
+        throw new ConfigException("association source_column must not be empty");
+      }
+      boolean exists =
+          schema.getColumns().stream()
+              .anyMatch(col -> col.getName().equals(assoc.getSourceColumn()));
+      if (!exists) {
+        throw new ConfigException(
+            String.format(
+                "association source_column '%s' does not exist in input schema",
+                assoc.getSourceColumn()));
+      }
+      if (!seenReferenceFields.add(assoc.getReferenceField())) {
+        throw new ConfigException(
+            String.format("duplicate association reference_field '%s'", assoc.getReferenceField()));
       }
     }
     final List<TaskReport> taskReports = control.run(task.dump());

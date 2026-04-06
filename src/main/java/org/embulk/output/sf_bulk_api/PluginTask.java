@@ -1,5 +1,6 @@
 package org.embulk.output.sf_bulk_api;
 
+import java.util.List;
 import java.util.Optional;
 import org.embulk.util.config.Config;
 import org.embulk.util.config.ConfigDefault;
@@ -67,4 +68,8 @@ public interface PluginTask extends Task {
   @Config("error_records_detail_output_file")
   @ConfigDefault("null")
   Optional<String> getErrorRecordsDetailOutputFile();
+
+  @Config("associations")
+  @ConfigDefault("[]")
+  List<AssociationConfig> getAssociations();
 }

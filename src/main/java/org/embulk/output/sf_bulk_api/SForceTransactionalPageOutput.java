@@ -5,11 +5,19 @@ import static org.embulk.output.sf_bulk_api.SfBulkApiOutputPlugin.CONFIG_MAPPER_
 import com.sforce.soap.partner.fault.ApiFault;
 import com.sforce.soap.partner.sobject.SObject;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
+import org.embulk.config.ConfigException;
 import org.embulk.config.TaskReport;
+import org.embulk.spi.Column;
 import org.embulk.spi.Page;
 import org.embulk.spi.PageReader;
+import org.embulk.spi.Schema;
 import org.embulk.spi.TransactionalPageOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +29,8 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
   private final PageReader pageReader;
   private final PluginTask pluginTask;
   private final ErrorHandler errorHandler;
+  private final Map<AssociationConfig, Column> associationColumns;
+  private final Set<String> associationSourceColumns;
 
   private final Logger logger = LoggerFactory.getLogger(SForceTransactionalPageOutput.class);
   private boolean failed;
@@ -36,6 +46,14 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
     this.pluginTask = pluginTask;
     this.errorHandler = errorHandler;
     this.batchSize = pluginTask.getBatchSize();
+    Schema schema = pageReader.getSchema();
+    List<AssociationConfig> associations = pluginTask.getAssociations();
+    this.associationColumns = new LinkedHashMap<>();
+    for (AssociationConfig assoc : associations) {
+      associationColumns.put(assoc, findColumn(schema, assoc.getSourceColumn()));
+    }
+    this.associationSourceColumns =
+        associations.stream().map(AssociationConfig::getSourceColumn).collect(Collectors.toSet());
   }
 
   @Override
@@ -48,8 +66,32 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
         record.setType(this.pluginTask.getObject());
         SForceColumnVisitor visitor =
             new SForceColumnVisitor(record, pageReader, pluginTask.getIgnoreNulls());
-        pageReader.getSchema().visitColumns(visitor);
-        record.setFieldsToNull(visitor.getFieldsToNull());
+        // Visit only non-association columns. Association source_columns are not
+        // Salesforce fields and must be skipped from direct SObject field assignment.
+        // Their values are read separately in the association processing below.
+        pageReader.getSchema().getColumns().stream()
+            .filter(col -> !associationSourceColumns.contains(col.getName()))
+            .forEach(col -> col.visit(visitor));
+
+        List<String> fieldsToNull = new ArrayList<>(Arrays.asList(visitor.getFieldsToNull()));
+        for (Map.Entry<AssociationConfig, Column> entry : associationColumns.entrySet()) {
+          AssociationConfig assoc = entry.getKey();
+          Column sourceCol = entry.getValue();
+          if (pageReader.isNull(sourceCol)) {
+            if (!pluginTask.getIgnoreNulls()) {
+              fieldsToNull.add(assoc.getReferenceField());
+            }
+          } else {
+            String value = readColumnAsString(pageReader, sourceCol);
+            String relationshipName =
+                AssociationConfig.deriveRelationshipName(assoc.getReferenceField());
+            SObject refObject = new SObject();
+            refObject.setType(assoc.getReferencedObject());
+            refObject.setField(assoc.getUniqueKey(), value);
+            record.setField(relationshipName, refObject);
+          }
+        }
+        record.setFieldsToNull(fieldsToNull.toArray(new String[0]));
         records.add(record);
         if (records.size() >= batchSize) {
           try {
@@ -101,6 +143,36 @@ public class SForceTransactionalPageOutput implements TransactionalPageOutput {
 
   @Override
   public void abort() {}
+
+  private Column findColumn(Schema schema, String columnName) {
+    return schema.getColumns().stream()
+        .filter(col -> col.getName().equals(columnName))
+        .findFirst()
+        .orElseThrow(() -> new ConfigException("Column not found: " + columnName));
+  }
+
+  @SuppressWarnings("deprecation")
+  private String readColumnAsString(PageReader reader, Column column) {
+    switch (column.getType().getName()) {
+      case "string":
+        return reader.getString(column);
+      case "long":
+        return String.valueOf(reader.getLong(column));
+      case "double":
+        return String.valueOf(reader.getDouble(column));
+      case "boolean":
+        return String.valueOf(reader.getBoolean(column));
+      case "timestamp":
+        return reader.getTimestamp(column).getInstant().toString();
+      case "json":
+        return reader.getJson(column).toJson();
+      default:
+        throw new ConfigException(
+            String.format(
+                "Unsupported column type '%s' for association source_column '%s'",
+                column.getType().getName(), column.getName()));
+    }
+  }
 
   @Override
   public TaskReport commit() {
