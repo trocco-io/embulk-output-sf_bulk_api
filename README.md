@@ -21,8 +21,9 @@ Embulk output plugin for Salesforce Bulk API.
   - **server_url**: Oauth server url (string, required)
   - **access_token**: Oauth access token (string, required)
 - **object**: Salesforce object (sObject) type (string, required)
-- **action_type**: Action type (`insert`, `update`, or `upsert`, required)
+- **action_type**: Action type (`insert`, `update`, `upsert`, or `delete`, required)
 - **upsert_key**: Name of the external ID field (string, required when `upsert` action, default: `key`)
+- **delete_key**: Input column name that holds the Salesforce record Id to delete. Used only with `delete` action. (string, optional, default: `Id`)
 - **ignore_nulls**: Whether to ignore nulls or set fields to null when column is null (boolean, default: `true`)
 - **throw_if_failed**: Whether to throw exception at the end of transaction if there are one or more failures (boolean, default: `true`)
 - **batch_size**: Number of records per API call (integer, default: `200`, min: `1`, max: `200`)
@@ -82,6 +83,25 @@ out:
 ```
 
 In this example, the `account_code` input column is used to look up an `Account` by its `External_Id__c` field and set the `AccountId` reference. The `owner_username` column resolves a `User` by `Username` for the polymorphic `OwnerId` field. Salesforce resolves these references server-side within the same API call.
+
+### `delete`
+```yaml
+out:
+  type: sf_bulk_api
+  username: username
+  password: password
+  security_token: security_token
+  object: ExampleCustomObject__c
+  action_type: delete
+  delete_key: record_id
+```
+
+Records are deleted by the Salesforce record Id read from the `delete_key` column (default `Id`). This performs a **logical delete** (moves records to the Recycle Bin), so deleted records remain recoverable. Other columns in the input are ignored — only the Id is used.
+
+Notes:
+- Records whose `delete_key` value is null or empty are skipped and counted as failures (no API call row is consumed for them).
+- Re-deleting an already-deleted record returns an `ENTITY_IS_DELETED` error, which is counted as a failure per `throw_if_failed`.
+- Physical/hard delete and deletion by external ID are not supported.
 
 ## Build
 

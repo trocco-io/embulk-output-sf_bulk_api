@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.sforce.soap.partner.DeleteResult;
 import com.sforce.soap.partner.IError;
 import com.sforce.soap.partner.SaveResult;
 import com.sforce.soap.partner.StatusCode;
@@ -175,6 +176,37 @@ public class TestErrorHandler {
   }
 
   @Test
+  public void testHandleErrorsWithDeleteResults() throws IOException {
+    ErrorHandler handler = new ErrorHandler(schema, errorFilePath.toString(), 5);
+
+    List<SObject> sObjects = new ArrayList<>();
+    sObjects.add(createTestSObject("10", "Eve", "eve@example.com", true, 81.0));
+    sObjects.add(createTestSObject("11", "Frank", "frank@example.com", false, 64.0));
+
+    DeleteResult[] results = new DeleteResult[2];
+    results[0] = createSuccessDeleteResult();
+    results[1] =
+        createFailedDeleteResult(
+            StatusCode.ENTITY_IS_DELETED, "entity is deleted", new String[] {"Id"});
+
+    long errorCount = handler.handleErrors(sObjects, results);
+    assertEquals(1, errorCount);
+
+    handler.close();
+
+    Path taskFilePath = Paths.get(errorFilePath.toString() + "_task005.jsonl");
+    assertTrue(Files.exists(taskFilePath));
+
+    List<String> lines = Files.readAllLines(taskFilePath);
+    assertEquals(1, lines.size());
+
+    JsonObject jsonObject = new JsonParser().parse(lines.get(0)).getAsJsonObject();
+    JsonObject recordData = jsonObject.getAsJsonObject("record_data");
+    assertEquals(11.0, recordData.get("id").getAsDouble(), 0.01);
+    assertEquals("ENTITY_IS_DELETED", jsonObject.get("error_code").getAsString());
+  }
+
+  @Test
   public void testMultipleErrors() throws IOException {
     ErrorHandler handler = new ErrorHandler(schema, errorFilePath.toString(), 3);
 
@@ -314,6 +346,21 @@ public class TestErrorHandler {
 
   private UpsertResult createFailedUpsertResult(StatusCode code, String message, String[] fields) {
     UpsertResult result = new UpsertResult();
+    result.setSuccess(false);
+    IError error = createError(code, message, fields);
+    result.setErrors(new com.sforce.soap.partner.Error[] {convertToError(error)});
+    return result;
+  }
+
+  private DeleteResult createSuccessDeleteResult() {
+    DeleteResult result = new DeleteResult();
+    result.setSuccess(true);
+    result.setId("12345");
+    return result;
+  }
+
+  private DeleteResult createFailedDeleteResult(StatusCode code, String message, String[] fields) {
+    DeleteResult result = new DeleteResult();
     result.setSuccess(false);
     IError error = createError(code, message, fields);
     result.setErrors(new com.sforce.soap.partner.Error[] {convertToError(error)});

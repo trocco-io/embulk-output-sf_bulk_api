@@ -81,6 +81,14 @@ public class Util {
     }
   }
 
+  public static String deleteRequestBody(String... ids) {
+    String idsBody =
+        Arrays.stream(ids)
+            .map(id -> String.format("<m:ids>%s</m:ids>", id))
+            .collect(Collectors.joining());
+    return replaceActionRequestBodyTemplate("m:delete", idsBody);
+  }
+
   private static String replaceActionRequestBodyTemplate(String actionTypeTag, String actionBody) {
     return readResource("actionRequestBodyTemplate.xml")
         .replaceAll("##ACTION_TYPE_TAG##", actionTypeTag)
@@ -118,6 +126,10 @@ public class Util {
     return replaceActionResponseBodyTemplate("upsertResponse", results);
   }
 
+  public static MockResponse mockDeleteResponse(Boolean[] results) {
+    return replaceActionResponseBodyTemplate("deleteResponse", results);
+  }
+
   public static MockResponse mockActionResponse(String actionType, Boolean[] results) {
     if (actionType.equals("insert")) {
       return mockInsertResponse(results);
@@ -125,6 +137,8 @@ public class Util {
       return mockUpdateResponse(results);
     } else if (actionType.equals("upsert")) {
       return mockUpsertResponse(results);
+    } else if (actionType.equals("delete")) {
+      return mockDeleteResponse(results);
     } else {
       throw new AssertionError();
     }
