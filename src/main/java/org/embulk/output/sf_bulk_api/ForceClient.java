@@ -45,6 +45,12 @@ public class ForceClient {
               pluginTask.getObject(),
               pluginTask.getUpdateKey().get(),
               errorHandler);
+    } else if (this.actionType == ActionType.DELETE && !"Id".equalsIgnoreCase(this.deleteKey)) {
+      // delete_key that is not the record Id is treated as an external/business key,
+      // resolved to record Ids via SOQL (same mechanism as update_key).
+      this.sfIdResolver =
+          new SfIdResolver(
+              this.partnerConnection, pluginTask.getObject(), this.deleteKey, errorHandler);
     } else {
       this.sfIdResolver = null;
     }
@@ -63,6 +69,9 @@ public class ForceClient {
         }
         return update(sObjects);
       case DELETE:
+        if (sfIdResolver != null) {
+          return deleteWithExternalKey(sObjects);
+        }
         return delete(sObjects);
       default:
         throw new AssertionError("Invalid actionType: " + actionType);
@@ -127,6 +136,19 @@ public class ForceClient {
     final DeleteResult[] deleteResultArray =
         partnerConnection.delete(ids.toArray(new String[ids.size()]));
     return failures + errorHandler.handleErrors(targets, deleteResultArray);
+  }
+
+  private long deleteWithExternalKey(final List<SObject> sObjects) throws ConnectionException {
+    // Resolve the external/business key to record Ids via SOQL, then delete by Id.
+    final SfIdResolver.ResolveResult resolveResult = sfIdResolver.resolve(sObjects);
+    long failures = resolveResult.getUnresolvedCount();
+    final List<SObject> resolved = resolveResult.getResolvedRecords();
+    if (!resolved.isEmpty()) {
+      final String[] ids = resolved.stream().map(SObject::getId).toArray(String[]::new);
+      final DeleteResult[] deleteResultArray = partnerConnection.delete(ids);
+      failures += errorHandler.handleErrors(resolved, deleteResultArray);
+    }
+    return failures;
   }
 
   private enum ActionType {

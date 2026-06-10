@@ -23,7 +23,9 @@ Embulk output plugin for Salesforce Bulk API.
 - **object**: Salesforce object (sObject) type (string, required)
 - **action_type**: Action type (`insert`, `update`, `upsert`, or `delete`, required)
 - **upsert_key**: Name of the external ID field (string, required when `upsert` action, default: `key`)
-- **delete_key**: Input column name that holds the Salesforce record Id to delete. Used only with `delete` action. (string, optional, default: `Id`)
+- **delete_key**: Field that identifies the records to delete. Used only with `delete` action. (string, optional, default: `Id`)
+  - When set to `Id` (default), the input column `Id` is read as the Salesforce record Id and deleted directly.
+  - When set to any other field, the value is treated as an external/business key: the plugin resolves it to a record Id via SOQL (`SELECT Id, <delete_key> FROM <object> WHERE <delete_key> IN (...)`) and then deletes — the same resolution mechanism as `update_key`. The input column name must match the Salesforce field API name. The field does not need to be a true External ID; any queryable field works. Keys that match zero or multiple records (or are null/duplicated in the input) are reported as failures.
 - **ignore_nulls**: Whether to ignore nulls or set fields to null when column is null (boolean, default: `true`)
 - **throw_if_failed**: Whether to throw exception at the end of transaction if there are one or more failures (boolean, default: `true`)
 - **batch_size**: Number of records per API call (integer, default: `200`, min: `1`, max: `200`)
@@ -84,7 +86,7 @@ out:
 
 In this example, the `account_code` input column is used to look up an `Account` by its `External_Id__c` field and set the `AccountId` reference. The `owner_username` column resolves a `User` by `Username` for the polymorphic `OwnerId` field. Salesforce resolves these references server-side within the same API call.
 
-### `delete`
+### `delete` (by record Id)
 ```yaml
 out:
   type: sf_bulk_api
@@ -93,15 +95,31 @@ out:
   security_token: security_token
   object: ExampleCustomObject__c
   action_type: delete
-  delete_key: record_id
+  delete_key: Id
 ```
 
-Records are deleted by the Salesforce record Id read from the `delete_key` column (default `Id`). This performs a **logical delete** (moves records to the Recycle Bin), so deleted records remain recoverable. Other columns in the input are ignored — only the Id is used.
+The input column `Id` is read as the Salesforce record Id and deleted directly.
+
+### `delete` (by external/business key)
+```yaml
+out:
+  type: sf_bulk_api
+  username: username
+  password: password
+  security_token: security_token
+  object: ExampleCustomObject__c
+  action_type: delete
+  delete_key: Employee_Code__c
+```
+
+The `Employee_Code__c` column value is resolved to a record Id via SOQL, then deleted — the same resolution mechanism as `update_key`.
+
+Either way the delete is a **logical delete** (moves records to the Recycle Bin), so deleted records remain recoverable. Only the key is used; other input columns are ignored.
 
 Notes:
-- Records whose `delete_key` value is null or empty are skipped and counted as failures (no API call row is consumed for them).
+- Records whose `delete_key` value is null/empty, or (for external keys) that resolve to zero or multiple records, are skipped and counted as failures.
 - Re-deleting an already-deleted record returns an `ENTITY_IS_DELETED` error, which is counted as a failure per `throw_if_failed`.
-- Physical/hard delete and deletion by external ID are not supported.
+- Physical/hard delete is not supported.
 
 ## Build
 

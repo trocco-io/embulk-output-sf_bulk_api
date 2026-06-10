@@ -220,13 +220,11 @@ public class TestSfBulkApiFileOutputPlugin {
   @Test
   public void testDelete() throws IOException, InterruptedException {
     ConfigSource config =
-        newDefaultConfigSource(mockWebServer)
-            .set("action_type", "delete")
-            .set("delete_key", "record_id");
+        newDefaultConfigSource(mockWebServer).set("action_type", "delete").set("delete_key", "Id");
 
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
     mockWebServer.enqueue(Util.mockActionSuccessResponse("delete", 2));
-    File in = Util.createInputFile(testFolder, "record_id:string", "id0", "id1");
+    File in = Util.createInputFile(testFolder, "Id:string", "id0", "id1");
     embulk.runOutput(config, in.toPath());
 
     // login + delete only; no logout call
