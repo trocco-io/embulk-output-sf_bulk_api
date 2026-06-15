@@ -65,6 +65,10 @@ public interface PluginTask extends Task {
   @ConfigDefault("null")
   Optional<String> getUpdateKey();
 
+  @Config("delete_key")
+  @ConfigDefault("\"Id\"")
+  String getDeleteKey();
+
   @Config("error_records_detail_output_file")
   @ConfigDefault("null")
   Optional<String> getErrorRecordsDetailOutputFile();

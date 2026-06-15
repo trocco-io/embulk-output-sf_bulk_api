@@ -215,6 +215,93 @@ public class TestSfBulkApiFileOutputPlugin {
     assertEquals(3, mockWebServer.getRequestCount());
   }
 
+  // ========== Delete tests ==========
+
+  @Test
+  public void testDelete() throws IOException, InterruptedException {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer).set("action_type", "delete").set("delete_key", "Id");
+
+    mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
+    mockWebServer.enqueue(Util.mockActionSuccessResponse("delete", 2));
+    File in = Util.createInputFile(testFolder, "Id:string", "id0", "id1");
+    embulk.runOutput(config, in.toPath());
+
+    // login + delete only; no logout call
+    assertEquals(2, mockWebServer.getRequestCount());
+    assertEquals(
+        Util.readResource("loginRequestBody.xml"),
+        Util.toStringFromGZip(mockWebServer.takeRequest()));
+    assertEquals(
+        Util.deleteRequestBody("id0", "id1"), Util.toStringFromGZip(mockWebServer.takeRequest()));
+  }
+
+  @Test
+  public void testDeleteUsesDefaultIdKey() throws IOException, InterruptedException {
+    // No delete_key set → defaults to the "Id" column.
+    ConfigSource config = newDefaultConfigSource(mockWebServer).set("action_type", "delete");
+
+    mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
+    mockWebServer.enqueue(Util.mockActionSuccessResponse("delete", 1));
+    File in = Util.createInputFile(testFolder, "Id:string", "id0");
+    embulk.runOutput(config, in.toPath());
+
+    assertEquals(2, mockWebServer.getRequestCount());
+    assertEquals(
+        Util.readResource("loginRequestBody.xml"),
+        Util.toStringFromGZip(mockWebServer.takeRequest()));
+    assertEquals(Util.deleteRequestBody("id0"), Util.toStringFromGZip(mockWebServer.takeRequest()));
+  }
+
+  @Test
+  public void testDeleteKeyNotInSchema() {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer)
+            .set("action_type", "delete")
+            .set("delete_key", "nonexistent_column");
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
+  @Test
+  public void testDeleteKeyWithNonDeleteAction() {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer).set("action_type", "insert").set("delete_key", "id");
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
+  @Test
+  public void testDeleteWithAssociationsRejected() {
+    Map<String, String> assoc = new HashMap<>();
+    assoc.put("reference_field", "AccountId");
+    assoc.put("referenced_object", "Account");
+    assoc.put("unique_key", "External_Id__c");
+    assoc.put("source_column", "id");
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer)
+            .set("action_type", "delete")
+            .set("delete_key", "id")
+            .set("associations", Arrays.asList(assoc));
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
   // ========== Association: validation tests ==========
 
   @Test

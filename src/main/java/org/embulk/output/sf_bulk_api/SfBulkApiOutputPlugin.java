@@ -53,6 +53,21 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
             String.format("update_key '%s' does not exist in input schema", updateKey));
       }
     }
+    if (config.has("delete_key") && !"delete".equals(task.getActionType())) {
+      throw new ConfigException("delete_key can only be used with action_type: delete");
+    }
+    if ("delete".equals(task.getActionType())) {
+      String deleteKey = task.getDeleteKey();
+      boolean exists =
+          schema.getColumns().stream().anyMatch(column -> column.getName().equals(deleteKey));
+      if (!exists) {
+        throw new ConfigException(
+            String.format("delete_key '%s' does not exist in input schema", deleteKey));
+      }
+      if (!task.getAssociations().isEmpty()) {
+        throw new ConfigException("associations cannot be used with action_type: delete");
+      }
+    }
     Set<String> seenReferenceFields = new HashSet<>();
     for (AssociationConfig assoc : task.getAssociations()) {
       if (assoc.getReferenceField().isEmpty()) {

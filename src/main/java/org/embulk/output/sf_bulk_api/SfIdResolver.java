@@ -19,17 +19,20 @@ public class SfIdResolver {
   private final Logger logger = LoggerFactory.getLogger(SfIdResolver.class);
   private final PartnerConnection connection;
   private final String objectType;
-  private final String updateKey;
+  private final String keyField;
+  private final String keyLabel;
   private final ErrorHandler errorHandler;
 
   public SfIdResolver(
       PartnerConnection connection,
       String objectType,
-      String updateKey,
+      String keyField,
+      String keyLabel,
       ErrorHandler errorHandler) {
     this.connection = connection;
     this.objectType = objectType;
-    this.updateKey = updateKey;
+    this.keyField = keyField;
+    this.keyLabel = keyLabel;
     this.errorHandler = errorHandler;
   }
 
@@ -37,12 +40,12 @@ public class SfIdResolver {
     List<SObject> resolved = new ArrayList<>();
     long unresolvedCount = 0;
 
-    // 1. Collect update_key values and check for null keys
+    // 1. Collect key values and check for null keys
     Map<String, List<SObject>> keyToRecords = new LinkedHashMap<>();
     for (SObject record : records) {
-      Object keyValue = record.getField(updateKey);
+      Object keyValue = record.getField(keyField);
       if (keyValue == null) {
-        errorHandler.handleIdResolveError(record, "update_key value is null");
+        errorHandler.handleIdResolveError(record, keyLabel + " value is null");
         unresolvedCount++;
         continue;
       }
@@ -56,7 +59,7 @@ public class SfIdResolver {
         duplicateInputKeys.add(entry.getKey());
         for (SObject r : entry.getValue()) {
           errorHandler.handleIdResolveError(
-              r, "Duplicate update_key value in input: " + updateKey + "=" + entry.getKey());
+              r, "Duplicate " + keyLabel + " value in input: " + keyField + "=" + entry.getKey());
           unresolvedCount++;
         }
       }
@@ -90,13 +93,13 @@ public class SfIdResolver {
       int count = keyCounts.getOrDefault(keyValue, 0);
       if (count == 0) {
         for (SObject r : recordsForKey) {
-          errorHandler.handleIdResolveError(r, "No record found for " + updateKey + "=" + keyValue);
+          errorHandler.handleIdResolveError(r, "No record found for " + keyField + "=" + keyValue);
           unresolvedCount++;
         }
       } else if (count > 1) {
         for (SObject r : recordsForKey) {
           errorHandler.handleIdResolveError(
-              r, "Multiple records found for " + updateKey + "=" + keyValue);
+              r, "Multiple records found for " + keyField + "=" + keyValue);
           unresolvedCount++;
         }
       } else {
@@ -114,7 +117,7 @@ public class SfIdResolver {
   private void processQueryResults(
       QueryResult queryResult, Map<String, String> keyToId, Map<String, Integer> keyCounts) {
     for (SObject result : queryResult.getRecords()) {
-      Object fieldValue = result.getField(updateKey);
+      Object fieldValue = result.getField(keyField);
       if (fieldValue == null) {
         continue;
       }
@@ -128,7 +131,7 @@ public class SfIdResolver {
     String inClause =
         keyValues.stream().map(v -> "'" + escapeSoql(v) + "'").collect(Collectors.joining(","));
     return String.format(
-        "SELECT Id, %s FROM %s WHERE %s IN (%s)", updateKey, objectType, updateKey, inClause);
+        "SELECT Id, %s FROM %s WHERE %s IN (%s)", keyField, objectType, keyField, inClause);
   }
 
   private String escapeSoql(String value) {

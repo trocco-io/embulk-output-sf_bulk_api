@@ -1,12 +1,14 @@
 package org.embulk.output.sf_bulk_api;
 
 import com.sforce.soap.partner.Connector;
+import com.sforce.soap.partner.DeleteResult;
 import com.sforce.soap.partner.PartnerConnection;
 import com.sforce.soap.partner.SaveResult;
 import com.sforce.soap.partner.UpsertResult;
 import com.sforce.soap.partner.sobject.SObject;
 import com.sforce.ws.ConnectionException;
 import com.sforce.ws.ConnectorConfig;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ public class ForceClient {
   private final Logger logger = LoggerFactory.getLogger(ForceClient.class);
   private final ActionType actionType;
   private final String upsertKey;
+  private final String deleteKey;
   private final ErrorHandler errorHandler;
   private final SfIdResolver sfIdResolver;
   private final Map<AuthMethod, ConnectorConfigCreator> connectorConfigCreators = new HashMap<>();
@@ -32,6 +35,7 @@ public class ForceClient {
     this.partnerConnection = Connector.newConnection(connectorConfig);
     this.actionType = ActionType.convertActionType(pluginTask.getActionType());
     this.upsertKey = pluginTask.getUpsertKey();
+    this.deleteKey = pluginTask.getDeleteKey();
     this.errorHandler = errorHandler;
 
     if (this.actionType == ActionType.UPDATE && pluginTask.getUpdateKey().isPresent()) {
@@ -40,6 +44,17 @@ public class ForceClient {
               this.partnerConnection,
               pluginTask.getObject(),
               pluginTask.getUpdateKey().get(),
+              "update_key",
+              errorHandler);
+    } else if (this.actionType == ActionType.DELETE && !"Id".equalsIgnoreCase(this.deleteKey)) {
+      // delete_key that is not the record Id is treated as an external/business key,
+      // resolved to record Ids via SOQL (same mechanism as update_key).
+      this.sfIdResolver =
+          new SfIdResolver(
+              this.partnerConnection,
+              pluginTask.getObject(),
+              this.deleteKey,
+              "delete_key",
               errorHandler);
     } else {
       this.sfIdResolver = null;
@@ -58,6 +73,11 @@ public class ForceClient {
           return updateWithExternalKey(sObjects);
         }
         return update(sObjects);
+      case DELETE:
+        if (sfIdResolver != null) {
+          return deleteWithExternalKey(sObjects);
+        }
+        return delete(sObjects);
       default:
         throw new AssertionError("Invalid actionType: " + actionType);
     }
@@ -96,10 +116,51 @@ public class ForceClient {
     return errorHandler.handleErrors(sObjects, saveResultArray);
   }
 
+  private long delete(final List<SObject> sObjects) throws ConnectionException {
+    // Extract the Salesforce record Id from the delete_key column of each record.
+    // Records whose Id is null/empty are counted as failures here (mirroring SfIdResolver)
+    // so the records sent to delete() stay aligned 1:1 with the returned DeleteResult[].
+    final List<SObject> targets = new ArrayList<>();
+    final List<String> ids = new ArrayList<>();
+    long failures = 0;
+    for (final SObject sObject : sObjects) {
+      final Object idValue = sObject.getField(this.deleteKey);
+      final String id = idValue == null ? null : idValue.toString().trim();
+      if (id == null || id.isEmpty()) {
+        errorHandler.handleIdResolveError(
+            sObject, "delete_key '" + this.deleteKey + "' value is null or empty");
+        failures++;
+        continue;
+      }
+      targets.add(sObject);
+      ids.add(id);
+    }
+    if (ids.isEmpty()) {
+      return failures;
+    }
+    final DeleteResult[] deleteResultArray =
+        partnerConnection.delete(ids.toArray(new String[ids.size()]));
+    return failures + errorHandler.handleErrors(targets, deleteResultArray);
+  }
+
+  private long deleteWithExternalKey(final List<SObject> sObjects) throws ConnectionException {
+    // Resolve the external/business key to record Ids via SOQL, then delete by Id.
+    final SfIdResolver.ResolveResult resolveResult = sfIdResolver.resolve(sObjects);
+    long failures = resolveResult.getUnresolvedCount();
+    final List<SObject> resolved = resolveResult.getResolvedRecords();
+    if (!resolved.isEmpty()) {
+      final String[] ids = resolved.stream().map(SObject::getId).toArray(String[]::new);
+      final DeleteResult[] deleteResultArray = partnerConnection.delete(ids);
+      failures += errorHandler.handleErrors(resolved, deleteResultArray);
+    }
+    return failures;
+  }
+
   private enum ActionType {
     INSERT,
     UPSERT,
-    UPDATE;
+    UPDATE,
+    DELETE;
 
     public static ActionType convertActionType(final String key) {
       switch (key) {
@@ -109,6 +170,8 @@ public class ForceClient {
           return UPSERT;
         case "update":
           return UPDATE;
+        case "delete":
+          return DELETE;
         default:
           return null;
       }

@@ -34,7 +34,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveSuccess() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record1 = new SObject(OBJECT_TYPE);
@@ -70,7 +71,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveNoMatchingRecord() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record = new SObject(OBJECT_TYPE);
@@ -93,7 +95,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveMultipleMatchingSfRecords() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record = new SObject(OBJECT_TYPE);
@@ -122,7 +125,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveDuplicateKeysInInput() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record1 = new SObject(OBJECT_TYPE);
@@ -145,7 +149,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveNullKeyValue() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record = new SObject(OBJECT_TYPE);
@@ -162,7 +167,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveMixedResults() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     // Record with valid key that will be found
@@ -201,7 +207,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveSoqlEscaping() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record = new SObject(OBJECT_TYPE);
@@ -227,7 +234,8 @@ public class TestSfIdResolver {
 
   @Test
   public void testResolveQueryMore() throws ConnectionException {
-    SfIdResolver resolver = new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, errorHandler);
+    SfIdResolver resolver =
+        new SfIdResolver(mockConnection, OBJECT_TYPE, UPDATE_KEY, "update_key", errorHandler);
 
     List<SObject> records = new ArrayList<>();
     SObject record1 = new SObject(OBJECT_TYPE);

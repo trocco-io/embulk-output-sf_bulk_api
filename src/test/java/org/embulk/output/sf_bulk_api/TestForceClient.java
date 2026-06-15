@@ -55,6 +55,45 @@ public class TestForceClient {
   }
 
   @Test
+  public void testDelete() throws ConnectionException, InterruptedException, IOException {
+    mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
+    mockWebServer.enqueue(mockActionSuccessResponse("delete", 2));
+
+    newDeleteForceClient("id").action(newRecords(2));
+
+    assertEquals(2, mockWebServer.getRequestCount());
+    assertEquals(
+        readResource("loginRequestBody.xml"), toStringFromGZip(mockWebServer.takeRequest()));
+    assertEquals(
+        Util.deleteRequestBody("id0", "id1"), toStringFromGZip(mockWebServer.takeRequest()));
+  }
+
+  @Test
+  public void testDeleteSkipsNullKey()
+      throws ConnectionException, InterruptedException, IOException {
+    mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
+    // Only the record with a non-null delete_key value is sent to delete().
+    mockWebServer.enqueue(mockActionSuccessResponse("delete", 1));
+
+    List<SObject> records = new ArrayList<>();
+    SObject withId = new SObject(Util.OBJECT);
+    withId.addField("id", "id0");
+    records.add(withId);
+    SObject withoutId = new SObject(Util.OBJECT);
+    withoutId.addField("test", "no_id_here");
+    records.add(withoutId);
+
+    long failures = newDeleteForceClient("id").action(records);
+
+    // The null-key record is counted as a failure without an API call row.
+    assertEquals(1, failures);
+    assertEquals(2, mockWebServer.getRequestCount());
+    assertEquals(
+        readResource("loginRequestBody.xml"), toStringFromGZip(mockWebServer.takeRequest()));
+    assertEquals(Util.deleteRequestBody("id0"), toStringFromGZip(mockWebServer.takeRequest()));
+  }
+
+  @Test
   public void testNoLogoutCallOnClose()
       throws ConnectionException, InterruptedException, IOException {
     mockWebServer.enqueue(mockResponse("loginResponseBody.xml"));
@@ -92,6 +131,18 @@ public class TestForceClient {
   private ForceClient newForceClient(String actionType) throws ConnectionException {
     ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
     ConfigSource config = Util.newDefaultConfigSource(mockWebServer).set("action_type", actionType);
+    PluginTask task = configMapper.map(config, PluginTask.class);
+
+    Schema schema = new Schema(Collections.emptyList());
+    return new ForceClient(task, new ErrorHandler(schema));
+  }
+
+  private ForceClient newDeleteForceClient(String deleteKey) throws ConnectionException {
+    ConfigMapper configMapper = CONFIG_MAPPER_FACTORY.createConfigMapper();
+    ConfigSource config =
+        Util.newDefaultConfigSource(mockWebServer)
+            .set("action_type", "delete")
+            .set("delete_key", deleteKey);
     PluginTask task = configMapper.map(config, PluginTask.class);
 
     Schema schema = new Schema(Collections.emptyList());

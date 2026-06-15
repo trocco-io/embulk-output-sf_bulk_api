@@ -3,6 +3,7 @@ package org.embulk.output.sf_bulk_api;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
+import com.sforce.soap.partner.DeleteResult;
 import com.sforce.soap.partner.IError;
 import com.sforce.soap.partner.SaveResult;
 import com.sforce.soap.partner.UpsertResult;
@@ -159,6 +160,26 @@ public class ErrorHandler {
   }
 
   public long handleErrors(final List<SObject> sObjects, final UpsertResult[] results) {
+    return handleErrors(
+        sObjects,
+        Arrays.stream(results)
+            .map(
+                result ->
+                    new Result() {
+                      @Override
+                      public boolean isFailure() {
+                        return !result.isSuccess();
+                      }
+
+                      @Override
+                      public IError[] getErrors() {
+                        return result.getErrors();
+                      }
+                    })
+            .collect(Collectors.toList()));
+  }
+
+  public long handleErrors(final List<SObject> sObjects, final DeleteResult[] results) {
     return handleErrors(
         sObjects,
         Arrays.stream(results)
