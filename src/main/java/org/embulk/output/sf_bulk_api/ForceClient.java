@@ -44,13 +44,18 @@ public class ForceClient {
               this.partnerConnection,
               pluginTask.getObject(),
               pluginTask.getUpdateKey().get(),
+              "update_key",
               errorHandler);
     } else if (this.actionType == ActionType.DELETE && !"Id".equalsIgnoreCase(this.deleteKey)) {
       // delete_key that is not the record Id is treated as an external/business key,
       // resolved to record Ids via SOQL (same mechanism as update_key).
       this.sfIdResolver =
           new SfIdResolver(
-              this.partnerConnection, pluginTask.getObject(), this.deleteKey, errorHandler);
+              this.partnerConnection,
+              pluginTask.getObject(),
+              this.deleteKey,
+              "delete_key",
+              errorHandler);
     } else {
       this.sfIdResolver = null;
     }
