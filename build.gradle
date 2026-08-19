@@ -26,6 +26,20 @@ version = {
 }()
 
 
+// Embulk 0.9.x loads com.fasterxml.jackson.{core,databind,annotation} parent-first from
+// embulk-core, which bundles Jackson 2.6.7. Bundling a newer Jackson (pulled in by
+// force-wsc >= 5x) is ignored there and can cause linkage errors, so pin Jackson to the
+// versions matching embulk-core. force-wsc references Jackson only from com.sforce.async
+// (Bulk API, unused by this plugin), and all of those references exist in 2.6.7.
+configurations.all {
+    resolutionStrategy {
+        force "com.fasterxml.jackson.core:jackson-core:2.6.7",
+              "com.fasterxml.jackson.core:jackson-databind:2.6.7.5",
+              "com.fasterxml.jackson.core:jackson-annotations:2.6.7",
+              "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.7"
+    }
+}
+
 dependencies {
     def embulkVersion = "0.10.42"
     compileOnly("org.embulk:embulk-api:${embulkVersion}")
