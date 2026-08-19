@@ -15,7 +15,7 @@ Embulk output plugin for Salesforce Bulk API.
   - **username**: Login username (string, required)
   - **password**: Login password (string, required)
   - **security_token**: User’s security token (string, required)
-  - **api_version**: SOAP API version (string, default: `46.0`)
+  - **api_version**: SOAP API version (string, default: `64.0`; the username/password login flow is not supported by versions newer than `64.0`)
   - **auth_end_point**: SOAP API authentication endpoint (string, default: `https://login.salesforce.com/services/Soap/u/`)
 - If auth method is `oauth`
   - **server_url**: Oauth server url (string, required)

@@ -27,8 +27,10 @@ public interface PluginTask extends Task {
   @ConfigDefault("null")
   Optional<String> getPassword();
 
+  // Default to 64.0: the username/password login flow is not supported by
+  // SOAP API versions newer than 64.0.
   @Config("api_version")
-  @ConfigDefault("\"46.0\"")
+  @ConfigDefault("\"64.0\"")
   String getApiVersion();
 
   @Config("security_token")
