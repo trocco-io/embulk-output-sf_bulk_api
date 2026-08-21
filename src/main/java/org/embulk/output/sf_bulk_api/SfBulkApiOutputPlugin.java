@@ -41,6 +41,12 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     if (batchSize < 1 || batchSize > 200) {
       throw new ConfigException("batch_size must be between 1 and 200");
     }
+    if (task.getAuthMethod() == AuthMethod.user_password
+        && isApiVersionNewerThan64(task.getApiVersion())) {
+      throw new ConfigException(
+          "api_version must be 64.0 or earlier when auth_method is user_password"
+              + " (the SOAP login() call is not available in API versions 65.0 and later)");
+    }
     if (task.getUpdateKey().isPresent() && !"update".equals(task.getActionType())) {
       throw new ConfigException("update_key can only be used with action_type: update");
     }
@@ -147,6 +153,15 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       throw new ExecutionInterruptedException(e);
+    }
+  }
+
+  private static boolean isApiVersionNewerThan64(String apiVersion) {
+    try {
+      return Double.parseDouble(apiVersion) > 64.0;
+    } catch (NumberFormatException e) {
+      // Leave malformed versions to fail at login, as before.
+      return false;
     }
   }
 

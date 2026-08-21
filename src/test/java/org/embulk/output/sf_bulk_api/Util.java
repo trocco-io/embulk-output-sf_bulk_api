@@ -41,7 +41,7 @@ public class Util {
         .set("type", "sf_bulk_api")
         .set("username", "username")
         .set("password", "password")
-        .set("api_version", "46.0")
+        // api_version is left unset on purpose so that tests exercise the default value.
         .set("security_token", "security_token")
         .set("auth_end_point", mockWebServer.url("/services/Soap/u/").toString())
         .set("object", "object__c")

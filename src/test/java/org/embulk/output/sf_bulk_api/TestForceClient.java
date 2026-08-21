@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.embulk.config.ConfigSource;
 import org.embulk.spi.Schema;
 import org.embulk.util.config.ConfigMapper;
@@ -116,8 +117,10 @@ public class TestForceClient {
     newForceClient(actionType).action(newRecords(2));
 
     assertEquals(2, mockWebServer.getRequestCount());
-    assertEquals(
-        readResource("loginRequestBody.xml"), toStringFromGZip(mockWebServer.takeRequest()));
+    RecordedRequest loginRequest = mockWebServer.takeRequest();
+    // The login endpoint must be built with the default api_version (not set in the config).
+    assertEquals("/services/Soap/u/64.0/", loginRequest.getPath());
+    assertEquals(readResource("loginRequestBody.xml"), toStringFromGZip(loginRequest));
     assertEquals(
         actionRequestBody(
             actionType,
