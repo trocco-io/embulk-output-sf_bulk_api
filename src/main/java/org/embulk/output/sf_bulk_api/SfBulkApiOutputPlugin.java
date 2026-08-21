@@ -42,10 +42,14 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
       throw new ConfigException("batch_size must be between 1 and 200");
     }
     if (task.getAuthMethod() == AuthMethod.user_password
-        && isApiVersionNewerThan64(task.getApiVersion())) {
+        && !isSoapLoginAvailable(task.getApiVersion())) {
       throw new ConfigException(
-          "api_version must be 64.0 or earlier when auth_method is user_password"
-              + " (the SOAP login() call is not available in API versions 65.0 and later)");
+          "auth_method: user_password cannot be used with api_version "
+              + task.getApiVersion()
+              + " because the Salesforce SOAP login() call is not available in API"
+              + " version 65.0 or later. Set api_version to "
+              + PluginTask.MAX_USER_PASSWORD_API_VERSION
+              + " or lower, or use auth_method: oauth.");
     }
     if (task.getUpdateKey().isPresent() && !"update".equals(task.getActionType())) {
       throw new ConfigException("update_key can only be used with action_type: update");
@@ -156,12 +160,15 @@ public class SfBulkApiOutputPlugin implements OutputPlugin {
     }
   }
 
-  private static boolean isApiVersionNewerThan64(String apiVersion) {
+  // The SOAP login() call is not available in API version 65.0 or later.
+  // https://help.salesforce.com/s/articleView?id=release-notes.rn_api_upcoming_retirement_258rn.htm&language=en_US&release=258&type=5
+  private static boolean isSoapLoginAvailable(String apiVersion) {
     try {
-      return Double.parseDouble(apiVersion) > 64.0;
+      return Double.parseDouble(apiVersion)
+          <= Double.parseDouble(PluginTask.MAX_USER_PASSWORD_API_VERSION);
     } catch (NumberFormatException e) {
-      // Leave malformed versions to fail at login, as before.
-      return false;
+      // Unknown version format; defer to Salesforce to report an error.
+      return true;
     }
   }
 

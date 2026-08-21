@@ -7,6 +7,11 @@ import org.embulk.util.config.ConfigDefault;
 import org.embulk.util.config.Task;
 
 public interface PluginTask extends Task {
+  // The SOAP login() call used by auth_method: user_password is not available in API versions
+  // 65.0 and later, so this is both the default api_version and the maximum version accepted
+  // with user_password (validated in SfBulkApiOutputPlugin).
+  String MAX_USER_PASSWORD_API_VERSION = "64.0";
+
   @Config("auth_method")
   @ConfigDefault("\"user_password\"")
   AuthMethod getAuthMethod();
@@ -27,10 +32,8 @@ public interface PluginTask extends Task {
   @ConfigDefault("null")
   Optional<String> getPassword();
 
-  // Default to 64.0: the username/password login flow is not supported by
-  // SOAP API versions newer than 64.0.
   @Config("api_version")
-  @ConfigDefault("\"64.0\"")
+  @ConfigDefault("\"" + MAX_USER_PASSWORD_API_VERSION + "\"")
   String getApiVersion();
 
   @Config("security_token")

@@ -42,8 +42,10 @@ dependencies {
     // which bundles Jackson 2.6.7. A newer Jackson bundled in the plugin is ignored there
     // and can cause linkage errors. force-wsc references Jackson only from com.sforce.async
     // (Bulk API, unused by this plugin), and all of those references exist in 2.6.7.
-    // Exclude the transitive Jackson and re-declare 2.6.7 explicitly so the lock keeps the
-    // version required by Embulk v0.9 (same approach as embulk-input-soql_file).
+    // Exclude the transitive Jackson and re-declare 2.6.7 explicitly so that resolution can
+    // never jump to force-wsc's 2.18.x (same approach as embulk-input-soql_file). Note that
+    // jackson-databind actually resolves to 2.6.7.5 in the lock: the CVE-patched build pulled
+    // in transitively by embulk-util-config wins over the 2.6.7 declared below.
     compile("com.force.api:force-wsc:${forceApiVersion}") {
         exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
         exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
