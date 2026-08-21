@@ -28,15 +28,39 @@ version = {
 
 dependencies {
     def embulkVersion = "0.10.42"
+    // force-wsc and force-partner-api must be bumped in lockstep:
+    // force-partner-api's stubs are generated against the same force-wsc version.
+    def forceApiVersion = "68.0.0"
+
     compileOnly("org.embulk:embulk-api:${embulkVersion}")
     compileOnly("org.embulk:embulk-spi:${embulkVersion}")
 
     compile "org.embulk:embulk-util-config:0.3.4"
 
-    // https://mvnrepository.com/artifact/com.force.api/force-wsc
-    compile group: 'com.force.api', name: 'force-wsc', version: '47.0.0'
-    // https://mvnrepository.com/artifact/com.force.api/force-partner-api
-    compile group: 'com.force.api', name: 'force-partner-api', version: '47.0.0'
+    // force-wsc/force-partner-api declare Jackson in their pom (2.18.8 as of 68.0.0), but
+    // Embulk v0.9 loads jackson-core/databind/annotations parent-first from embulk-core,
+    // which bundles Jackson 2.6.7. A newer Jackson bundled in the plugin is ignored there
+    // and can cause linkage errors. force-wsc references Jackson only from com.sforce.async
+    // (Bulk API, unused by this plugin), and all of those references exist in 2.6.7.
+    // Exclude the transitive Jackson and re-declare 2.6.7 explicitly so that resolution can
+    // never jump to force-wsc's 2.18.x (same approach as embulk-input-soql_file). Note that
+    // jackson-databind actually resolves to 2.6.7.5 in the lock: the CVE-patched build pulled
+    // in transitively by embulk-util-config wins over the 2.6.7 declared below.
+    compile("com.force.api:force-wsc:${forceApiVersion}") {
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+    }
+    // force-partner-api depends on force-wsc, so we need to exclude jackson from it as well.
+    compile("com.force.api:force-partner-api:${forceApiVersion}") {
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+    }
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
+
     compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
 
     testImplementation("org.embulk:embulk-api:${embulkVersion}")

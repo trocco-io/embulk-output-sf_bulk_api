@@ -173,6 +173,21 @@ public class TestSfBulkApiFileOutputPlugin {
   }
 
   @Test
+  public void testUserPasswordApiVersionNewerThan64() {
+    ConfigSource config =
+        newDefaultConfigSource(mockWebServer)
+            .set("action_type", "insert")
+            .set("api_version", "68.0");
+    PartialExecutionException e =
+        assertThrows(
+            PartialExecutionException.class,
+            () ->
+                embulk.runOutput(
+                    config, Util.createInputFile(testFolder, "id:string", "id0").toPath()));
+    assertEquals(ConfigException.class, e.getCause().getClass());
+  }
+
+  @Test
   public void testBatchSizeZero() {
     ConfigSource config =
         newDefaultConfigSource(mockWebServer).set("action_type", "insert").set("batch_size", 0);

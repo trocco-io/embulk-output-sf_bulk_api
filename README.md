@@ -15,7 +15,7 @@ Embulk output plugin for Salesforce Bulk API.
   - **username**: Login username (string, required)
   - **password**: Login password (string, required)
   - **security_token**: User’s security token (string, required)
-  - **api_version**: SOAP API version (string, default: `46.0`)
+  - **api_version**: SOAP API version (string, default: `64.0`). Must be `64.0` or earlier: the SOAP `login()` call is not available in API versions 65.0 and later, is disabled by default in newly created orgs, and is [scheduled for retirement in all versions in Summer '27](https://help.salesforce.com/s/articleView?id=release-notes.rn_api_upcoming_retirement_258rn.htm). Consider migrating to the `oauth` auth method.
   - **auth_end_point**: SOAP API authentication endpoint (string, default: `https://login.salesforce.com/services/Soap/u/`)
 - If auth method is `oauth`
   - **server_url**: Oauth server url (string, required)
